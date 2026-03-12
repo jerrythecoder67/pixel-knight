@@ -1,0 +1,15 @@
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+
+# Workspace files
+.vscode/
+.idea/
+.gemini/
+
+# Temp files
+tmp/
+node_modules/
