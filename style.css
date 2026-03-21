@@ -832,6 +832,45 @@ button:active {
     transition: border-color 0.15s, color 0.15s;
 }
 #lore-btn:hover { border-color: #aaa; color: #ccc; }
+#lb-btn {
+    font-family: var(--font-pixel); font-size: 8px; padding: 6px 14px;
+    background: transparent; border: 2px solid var(--accent-purple);
+    color: var(--accent-purple); cursor: pointer; letter-spacing: 2px;
+    transition: border-color 0.15s, color 0.15s; margin-top: 4px;
+}
+#lb-btn:hover { border-color: #c9a0ff; color: #c9a0ff; }
+
+/* Leaderboard overlay */
+#leaderboard-overlay {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--ui-bg); border: 4px solid #555; border-radius: 6px;
+    padding: 20px 24px 16px; display: flex; flex-direction: column;
+    align-items: center; gap: 8px; width: 560px; max-width: 92vw;
+    max-height: 80vh; overflow-y: auto; z-index: 35; pointer-events: auto;
+    animation: popIn 0.3s ease-out; font-family: var(--font-pixel);
+}
+#leaderboard-overlay.hidden { display: none; }
+#leaderboard-overlay h2 { color: var(--accent-purple); font-size: 13px; letter-spacing: 2px; margin: 0; }
+#lb-content { width: 100%; }
+
+/* Leaderboard table (shared by overlay + game-over screen) */
+.lb-title { color: var(--accent-purple); font-size: 9px; letter-spacing: 1px; margin: 6px 0 4px; }
+.lb-table { width: 100%; border-collapse: collapse; font-size: 8px; font-family: var(--font-pixel); }
+.lb-table thead tr { background: rgba(179,136,255,0.08); }
+.lb-table th { color: var(--accent-purple); padding: 2px 6px; text-align: left; border-bottom: 1px solid rgba(179,136,255,0.25); font-size: 7px; }
+.lb-table tbody tr { border-bottom: 1px solid rgba(255,255,255,0.05); }
+.lb-table tbody tr.lb-rank1 { color: var(--accent-gold); }
+.lb-table tbody tr.lb-current { background: rgba(179,136,255,0.12); }
+.lb-table td { padding: 2px 6px; white-space: nowrap; }
+.lb-rank { color: #777; }
+.lb-char { color: #fff; }
+.lb-wave { color: var(--accent-purple); }
+.lb-kills { color: #f66; }
+.lb-gold { color: var(--accent-gold); }
+.lb-time { color: #aaa; }
+.lb-date { color: #555; font-size: 7px; }
+#overlay-endless-lb { margin: 4px 0; }
 
 #lore-overlay {
     position: absolute;

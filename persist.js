@@ -11,7 +11,8 @@ const PERSIST_DEFAULT = {
     totalLosses: 0,
     fossilPos: null,
     runHistory: [],
-    seenEnemies: {}
+    seenEnemies: {},
+    endlessLeaderboard: []
 };
 function loadPersist() {
     try { return Object.assign({}, PERSIST_DEFAULT, JSON.parse(localStorage.getItem(PERSIST_KEY) || '{}')); }

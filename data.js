@@ -1694,6 +1694,74 @@ const SKILL_TREE = {
     pathfinder:   { name:'Pathfinder',   icon:'🗺️', branch:'utility',  req:'momentum',    desc:'Immune to water slowdown; +15% speed on all terrain' },
 };
 
+// ─── MID-RUN EVENTS ───
+// Each event: { id, name, desc, duration (frames), apply(state,p), remove(state,p) }
+// apply() sets state flags; remove() clears them after duration.
+const MID_RUN_EVENTS = [
+    {
+        id: 'goldRush', name: '⚡ GOLD RUSH!', desc: 'Double gold drops for 30 seconds.',
+        duration: 1800,
+        apply:  (s, p) => { p._eventGoldMult = 2.0; },
+        remove: (s, p) => { delete p._eventGoldMult; }
+    },
+    {
+        id: 'eclipse', name: '🌑 ECLIPSE', desc: 'All enemies are stronger — but so are you.',
+        duration: 1800,
+        apply:  (s, p) => { s._eclipseActive = true; },
+        remove: (s, p) => { s._eclipseActive = false; }
+    },
+    {
+        id: 'bloodMoon', name: '🩸 BLOOD MOON', desc: 'All enemies this wave are elite.',
+        duration: 900,
+        apply:  (s, p) => { s._bloodMoonActive = true; s.enemies.forEach(e => { if (!e.isBoss && !e.elite) { e.elite = true; e.hp = Math.round(e.hp * 1.5); e.maxHp = e.hp; } }); },
+        remove: (s, p) => { s._bloodMoonActive = false; }
+    },
+    {
+        id: 'earthquake', name: '🌋 EARTHQUAKE', desc: 'The ground shakes violently!',
+        duration: 360,
+        apply:  (s, p) => { s._earthquakeActive = true; s.screenShakeMag = 6; s.screenShakeDur = 360; },
+        remove: (s, p) => { s._earthquakeActive = false; }
+    },
+    {
+        id: 'meteorShower', name: '☄️ METEOR SHOWER', desc: 'Flaming rocks rain from the sky!',
+        duration: 1200,
+        apply:  (s, p) => { s._meteorActive = true; s._meteorTimer = 0; },
+        remove: (s, p) => { s._meteorActive = false; }
+    },
+    {
+        id: 'wildHunt', name: '🐺 WILD HUNT', desc: 'Enemy spawns doubled this wave.',
+        duration: 0, // instant — modifies current wave
+        apply:  (s, p) => { const extra = s.waveSpawnQueue.slice(); s.waveSpawnQueue = [...s.waveSpawnQueue, ...extra]; s.waveEnemiesTotal = (s.waveEnemiesTotal || 0) + extra.length; },
+        remove: (s, p) => {}
+    },
+    {
+        id: 'healingSpring', name: '💧 HEALING SPRING', desc: 'A spring of healing energy restores your health.',
+        duration: 1200,
+        apply:  (s, p) => { s._healSpringActive = true; s._healSpringTimer = 0; },
+        remove: (s, p) => { s._healSpringActive = false; }
+    },
+    {
+        id: 'frost', name: '❄️ FROSTBIND', desc: 'Enemies are slowed for 20 seconds.',
+        duration: 1200,
+        apply:  (s, p) => { s._frostActive = true; },
+        remove: (s, p) => { s._frostActive = false; }
+    },
+];
+
+// ─── WEATHER ───
+const WEATHER_STAGES = [
+    { stage: 0, name: '',              fogAlpha: 0,    speedMult: 1.0,  lightningChance: 0 },
+    { stage: 1, name: 'Light Rain',    fogAlpha: 0.08, speedMult: 0.95, lightningChance: 0 },
+    { stage: 2, name: 'Heavy Rain',    fogAlpha: 0.22, speedMult: 0.85, lightningChance: 0 },
+    { stage: 3, name: 'Storm',         fogAlpha: 0.32, speedMult: 0.75, lightningChance: 0.003 },
+];
+const WEATHER_EXTREME = [
+    { name: 'Blizzard',   fogAlpha: 0.55, speedMult: 0.4,  lightningChance: 0 },
+    { name: 'Hailstorm',  fogAlpha: 0.3,  speedMult: 0.65, lightningChance: 0.005, hail: true },
+    { name: 'Hurricane',  fogAlpha: 0.45, speedMult: 0.55, lightningChance: 0.007 },
+    { name: 'Tornado',    fogAlpha: 0.38, speedMult: 0.6,  lightningChance: 0.004, tornado: true },
+];
+
 // ─── DIFFICULTY ───
 const DIFFICULTY_SETTINGS = {
     easy:    { enemyHpMult: 1.0,  enemySpeedMult: 1.0,  enemyDmgMult: 1.0,  playerHpMult: 1.05, goldMult: 0.90, spawnMult: 0.85, label: 'EASY' },

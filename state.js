@@ -92,6 +92,14 @@ const state = {
     underwater: false,
     sailorWorld: false,
     stickWorld: false,
+    mapVariant: 'normal', // 'normal' | 'island' | 'canyon' | 'cave'
+    // Mid-run events
+    activeEvent: null,     // { id, name, desc, timer, duration, remove }
+    _eclipseActive: false, _bloodMoonActive: false, _earthquakeActive: false,
+    _meteorActive: false, _meteorTimer: 0, _healSpringActive: false, _healSpringTimer: 0,
+    _frostActive: false,
+    // Weather
+    weather: { stage: 0, wavesLeft: 0, extreme: null, rainParticles: [], lightningFlash: 0, tornadoX: WORLD_W/2, tornadoY: WORLD_H/2 },
     telescopeActive: false,
     hasRubixCube: false,
     slipperyPatches: [],

@@ -9,6 +9,8 @@ function update() {
     // ─── DAY / NIGHT ───
     {
         const dn = state.dayNight;
+        if (state.mapVariant === 'cave') { dn.alpha = 0.45; } // cave: frozen dim
+        else {
         const EVENING_FRAMES = 600;
         dn.timer--;
         // Evening warning: last 600 frames of day
@@ -27,6 +29,7 @@ function update() {
                 showNotif('Day ' + dn.dayCount + ' — you survived the night!');
             }
         }
+        } // end non-cave branch
     }
 
     // ─── CHARACTER RUNTIME EFFECTS ───
@@ -229,6 +232,9 @@ function update() {
         if (p.isShutdown) spd = 0; // Robot shutdown: can't move
         if (p.vampSpeedMult) spd *= p.vampSpeedMult; // Vampire day/night
         if (playerInWeb && !p.dashing) spd *= 0.3;
+        // Weather player speed penalty (not while dashing)
+        if (!p.dashing) { const _wsP = state.weather.extreme || (state.weather.stage > 0 ? WEATHER_STAGES[state.weather.stage] : null); if (_wsP) spd *= _wsP.speedMult; }
+        if (state._eclipseActive) spd *= 1.3; // eclipse boosts player too
         // Water slowdown (pathfinder immune; also negated while dashing; sailor immune)
         if (!p.dashing && !p.skills?.pathfinder && !p.charSailor && isOnWater(p.x, p.y)) spd *= state.underwater ? 0.7 : 0.55;
         // Sailor: 2× on water, 0.5× on land
@@ -610,6 +616,11 @@ function update() {
         let spd = e.speed;
         if (hasUpgrade('frostAura') && dist < 100 + upgradeLevel('frostAura') * 10) spd *= 0.6 - upgradeLevel('frostAura') * 0.1;
         spd *= nightMult();
+        // Event/weather speed modifiers
+        if (state._frostActive) spd *= 0.6;
+        const _wsCur = state.weather.extreme || (state.weather.stage > 0 ? WEATHER_STAGES[state.weather.stage] : null);
+        if (_wsCur) spd *= _wsCur.speedMult;
+        if (state._eclipseActive) spd *= 1.3;
         if (e.wolfSlowed > 0) spd *= 0.45;
         if (e.toxinSlowed && e.toxinSlowed >= state.frame) spd *= 0.6;
         if (e.stunned && e.stunTimer > 0) { e.stunTimer--; if (e.stunTimer <= 0) e.stunned = false; spd = 0; }
@@ -1450,7 +1461,7 @@ function update() {
             }
             // Fury stacks (skill)
             if (p.skills?.fury) p.furyKills = (p.furyKills || 0) + 1;
-            let goldAmt = e.gold * (hasUpgrade('goldRush') ? 2 + upgradeLevel('goldRush') : 1) * p.streakMult * state.diffMult.goldMult;
+            let goldAmt = e.gold * (hasUpgrade('goldRush') ? 2 + upgradeLevel('goldRush') : 1) * p.streakMult * state.diffMult.goldMult * (p._eventGoldMult || 1);
             state.goldPickups.push({ x: e.x, y: e.y, amount: Math.round(goldAmt), life: 180 });
             createExplosion(e.x, e.y, e.color);
             if (hasUpgrade('vampiric')) p.hp = Math.min(p.maxHp, p.hp + 5 + upgradeLevel('vampiric') * 3);
@@ -2752,6 +2763,37 @@ function update() {
             showNotif('Wave ' + p.wave + (p.wave % 5 === 0 ? ' — Elite Wave!' : '') + '!');
         }
         if (p.wave % 5 === 0 && p.wave > 0 && !persist.achievements.gamerUnlock) showGamerShop();
+        // 5% chance per wave: random mid-run event
+        if (!state.activeEvent && Math.random() < 0.05) {
+            const ev = MID_RUN_EVENTS[Math.floor(Math.random() * MID_RUN_EVENTS.length)];
+            const clone = Object.assign({}, ev, { timer: ev.duration });
+            state.activeEvent = clone;
+            clone.apply(state, p);
+            showNotif('EVENT: ' + ev.name + ' — ' + ev.desc, true);
+        }
+        // Weather: 8% chance per wave to start rain if not already raining
+        if (state.weather.stage === 0 && !state.weather.extreme && Math.random() < 0.08) {
+            state.weather.stage = 1;
+            state.weather.wavesLeft = 10;
+            showNotif('It begins to rain...');
+        }
+        // Advance weather stage every 3 waves of rain
+        if (state.weather.stage > 0 && state.weather.wavesLeft > 0) {
+            state.weather.wavesLeft--;
+            const wl = state.weather.wavesLeft;
+            if (wl === 7) { state.weather.stage = 2; showNotif('The rain grows heavier. Fog rolls in.'); }
+            else if (wl === 4) { state.weather.stage = 3; showNotif('A storm breaks! Lightning fills the sky.'); }
+            else if (wl === 1 && Math.random() < 0.25) {
+                // Rare extreme weather at end
+                const extreme = WEATHER_EXTREME[Math.floor(Math.random() * WEATHER_EXTREME.length)];
+                state.weather.extreme = extreme;
+                state.weather.wavesLeft = 2;
+                showNotif('EXTREME WEATHER: ' + extreme.name + '!', true);
+            } else if (wl === 0) {
+                state.weather.stage = 0; state.weather.extreme = null;
+                showNotif('The storm passes.');
+            }
+        }
     }
     if (state.waveBreather > 0) state.waveBreather--;
     if (state.hordeWave && state.hordeTimer > 0) state.hordeTimer--;
@@ -2773,6 +2815,91 @@ function update() {
     // Clear bounty if target died or no longer in enemies
     if (state.bountyTarget && !state.enemies.includes(state.bountyTarget)) {
         state.bountyTarget = null;
+    }
+
+    // ─── MID-RUN EVENT TICK ───
+    if (state.activeEvent) {
+        if (state.activeEvent.duration > 0) {
+            state.activeEvent.timer--;
+            if (state.activeEvent.timer <= 0) {
+                state.activeEvent.remove(state, p);
+                state.activeEvent = null;
+            }
+        }
+        // Meteor shower: spawn fireballs from sky every 45 frames
+        if (state._meteorActive && state.frame % 45 === 0) {
+            const mx = state.camera.x + Math.random() * 800;
+            const my = state.camera.y + Math.random() * 600;
+            hitEnemies(mx, my, 60, 25, false, true);
+            if (p.hp > 0) {
+                const pdist = Math.hypot(p.x - mx, p.y - my);
+                if (pdist < 60) { p.hp -= 8; createExplosion(mx, my, '#ff6600'); }
+            }
+            createExplosion(mx, my, '#ff4400');
+        }
+        // Healing spring: restore 1 HP every 90 frames
+        if (state._healSpringActive) {
+            state._healSpringTimer++;
+            if (state._healSpringTimer % 90 === 0) p.hp = Math.min(p.maxHp, p.hp + 1);
+        }
+        // Eclipse: +30% enemy dmg and hp already applied via flag in enemy logic
+        // Frost: slow enemies (applied in enemy speed check below via _frostActive flag)
+    }
+
+    // ─── WEATHER TICK ───
+    const _wx = state.weather;
+    const _ws = _wx.extreme || (_wx.stage > 0 ? WEATHER_STAGES[_wx.stage] : null);
+    if (_ws) {
+        // Lightning strikes
+        if (_ws.lightningChance && Math.random() < _ws.lightningChance) {
+            const lx = state.camera.x + Math.random() * 800;
+            const ly = state.camera.y + Math.random() * 600;
+            state.lightningEffects = state.lightningEffects || [];
+            state.lightningEffects.push({ x: lx, y: ly, life: 18, alpha: 1 });
+            hitEnemies(lx, ly, 80, 35, true, false);
+            const pd = Math.hypot(p.x - lx, p.y - ly);
+            if (pd < 80) { p.hp -= 20; createExplosion(p.x, p.y, '#ffffaa'); showNotif('⚡ Lightning strike!'); }
+            _wx.lightningFlash = 8;
+        }
+        if (_wx.lightningFlash > 0) _wx.lightningFlash--;
+        // Hail damage to player every 3s
+        if (_ws.hail && state.frame % 180 === 0) {
+            p.hp -= 3; createExplosion(p.x, p.y, '#aaddff'); showNotif('Hail batters you!');
+        }
+        // Tornado: moves around world and pulls player
+        if (_ws.tornado) {
+            _wx.tornadoX += Math.sin(state.frame * 0.01) * 1.5;
+            _wx.tornadoY += Math.cos(state.frame * 0.008) * 1.2;
+            _wx.tornadoX = Math.max(200, Math.min(WORLD_W - 200, _wx.tornadoX));
+            _wx.tornadoY = Math.max(200, Math.min(WORLD_H - 200, _wx.tornadoY));
+            const td = Math.hypot(p.x - _wx.tornadoX, p.y - _wx.tornadoY);
+            if (td < 300) {
+                const pull = (300 - td) / 300 * 2.5;
+                p.x += (_wx.tornadoX - p.x) / (td || 1) * pull;
+                p.y += (_wx.tornadoY - p.y) / (td || 1) * pull;
+            }
+        }
+        // Rain particles (spawn new ones each frame)
+        if (_wx.stage > 0 && state.frame % 2 === 0) {
+            const intensity = _wx.stage === 1 ? 3 : _wx.stage === 2 ? 7 : 12;
+            for (let ri = 0; ri < intensity; ri++) {
+                _wx.rainParticles.push({
+                    x: state.camera.x + Math.random() * 820,
+                    y: state.camera.y - 10,
+                    vy: 8 + Math.random() * 4,
+                    vx: -1 + Math.random() * 0.5,
+                    life: 60 + Math.random() * 30
+                });
+            }
+        }
+        // Tick rain particles
+        for (let ri = _wx.rainParticles.length - 1; ri >= 0; ri--) {
+            const r = _wx.rainParticles[ri];
+            r.x += r.vx; r.y += r.vy; r.life--;
+            if (r.life <= 0) _wx.rainParticles.splice(ri, 1);
+        }
+    } else {
+        _wx.rainParticles.length = 0;
     }
 
     // Shadow demon: very rare world threat (after 20 kills, ~4% per 5s check)
@@ -3284,6 +3411,19 @@ function endGame() {
         date: new Date().toLocaleDateString()
     });
     if (persist.runHistory.length > 10) persist.runHistory.length = 10;
+    // Endless leaderboard
+    if (state.endlessMode) {
+        if (!persist.endlessLeaderboard) persist.endlessLeaderboard = [];
+        persist.endlessLeaderboard.push({
+            character: p.character || 'knight',
+            wave: p.wave || 1, kills: p.kills || 0,
+            gold: p.totalGoldEarned || 0,
+            runTime: state.endlessTimer || 0,
+            date: new Date().toLocaleDateString()
+        });
+        persist.endlessLeaderboard.sort((a, b) => b.wave !== a.wave ? b.wave - a.wave : b.kills - a.kills);
+        if (persist.endlessLeaderboard.length > 10) persist.endlessLeaderboard.length = 10;
+    }
     // Update persist
     persist.lifetimeKills = (persist.lifetimeKills || 0); // already tracked per kill
     persist.totalRuns = (persist.totalRuns || 0) + 1;
@@ -3414,6 +3554,30 @@ function endGame() {
         } else {
             histDiv.innerHTML = '';
         }
+    }
+    // Endless leaderboard display on game-over screen
+    const elDiv = document.getElementById('overlay-endless-lb');
+    if (elDiv && state.endlessMode && persist.endlessLeaderboard && persist.endlessLeaderboard.length > 0) {
+        const _fmtT = f => { const s = Math.floor(f/60); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); };
+        const _CHAR_ABBREV2 = { paleontologist:'Paleo', astronaut:'Astro', fashionModel:'Model', monsterTamer:'Tamer', lumberjack:'Lumber', commander:'Cmdr', scientist:'Sci', koolKat:'KoolKat', stickman:'Stick', oldMan:'OldMan', engineer:'Eng', rubixCuber:'Rubix' };
+        elDiv.innerHTML = '<div class="lb-title">ENDLESS LEADERBOARD</div>' +
+            '<table class="lb-table"><thead><tr><th>#</th><th>CHARACTER</th><th>WAVE</th><th>KILLS</th><th>GOLD</th><th>TIME</th><th>DATE</th></tr></thead><tbody>' +
+            persist.endlessLeaderboard.map((e, i) => {
+                const charDef = CHARACTERS[e.character];
+                const fullName = charDef ? charDef.name : (e.character || 'Knight');
+                const cName = _CHAR_ABBREV2[e.character] || fullName;
+                const isCurrent = i === 0 && state.endlessMode;
+                return '<tr class="' + (i===0?'lb-rank1':'') + (isCurrent?' lb-current':'') + '">' +
+                    '<td class="lb-rank">#'+(i+1)+'</td>' +
+                    '<td class="lb-char">'+cName+'</td>' +
+                    '<td class="lb-wave">'+e.wave+'</td>' +
+                    '<td class="lb-kills">'+(e.kills||0).toLocaleString()+'</td>' +
+                    '<td class="lb-gold">'+(e.gold||0).toLocaleString()+'</td>' +
+                    '<td class="lb-time">'+_fmtT(e.runTime||0)+'</td>' +
+                    '<td class="lb-date">'+(e.date||'')+'</td></tr>';
+            }).join('') + '</tbody></table>';
+    } else if (elDiv) {
+        elDiv.innerHTML = '';
     }
 }
 

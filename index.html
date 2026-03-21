@@ -200,6 +200,15 @@
                     <button class="diff-btn diff-hard" id="diff-extreme" style="display:none;border-color:#ff1744;color:#ff1744;">☠ EXTREME<br><span>Beat Hard &lt;30min twice to unlock</span></button>
                 </div>
                 <button id="lore-btn">LORE</button>
+                <button id="lb-btn">LEADERBOARD</button>
+            </div>
+
+            <!-- Endless Leaderboard Overlay -->
+            <div id="leaderboard-overlay" class="hidden">
+                <h2>ENDLESS LEADERBOARD</h2>
+                <p class="upgrade-subtitle">Top 10 endless mode runs</p>
+                <div id="lb-content"></div>
+                <button id="lb-close-btn">CLOSE</button>
             </div>
 
             <!-- Lore Scroll -->
@@ -313,6 +322,7 @@
                 <p id="high-score-stats"></p>
                 <div id="overlay-achievements"></div>
                 <div id="overlay-run-history"></div>
+                <div id="overlay-endless-lb"></div>
                 <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:8px">
                     <button id="restart-btn">Try Again?</button>
                     <button id="reset-progress-btn" class="danger-btn">Reset Progress</button>

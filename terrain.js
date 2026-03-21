@@ -296,6 +296,84 @@ function applyDinoWorldTerrain() {
     }
 }
 
+// ─── MAP VARIANT: ISLAND — water border around the world ───
+function applyIslandVariant() {
+    const cols = Math.ceil(WORLD_W / TILE), rows = Math.ceil(WORLD_H / TILE);
+    const bw = 8 + Math.floor(Math.random() * 3); // 8-10 tile border
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            if (r < bw || r >= rows - bw || c < bw || c >= cols - bw) {
+                terrainMap[r][c] = 'water';
+            }
+        }
+    }
+}
+
+// ─── MAP VARIANT: CANYON — jagged diagonal chasm with bridges ───
+function applyCanyonVariant() {
+    const cols = Math.ceil(WORLD_W / TILE), rows = Math.ceil(WORLD_H / TILE);
+    const halfW = 4; // canyon half-width in tiles
+    // Two bridge spans: one at ~35%, one at ~65% across
+    const bridge1Lo = Math.floor(cols * 0.33), bridge1Hi = Math.floor(cols * 0.38);
+    const bridge2Lo = Math.floor(cols * 0.62), bridge2Hi = Math.floor(cols * 0.67);
+    for (let c = 0; c < cols; c++) {
+        if (c >= bridge1Lo && c <= bridge1Hi) continue;
+        if (c >= bridge2Lo && c <= bridge2Hi) continue;
+        // Canyon center row snakes diagonally with noise
+        const diagRow = Math.round((c / (cols - 1)) * (rows - 1));
+        const noise = Math.round(Math.sin(c * 0.09) * 10 + Math.sin(c * 0.03) * 8);
+        const centerR = Math.max(halfW + 2, Math.min(rows - halfW - 3, diagRow + noise));
+        for (let dr = -halfW; dr <= halfW; dr++) {
+            const r = centerR + dr;
+            if (r >= 0 && r < rows) terrainMap[r][c] = 'water';
+        }
+    }
+    // Stone border along canyon edges
+    for (let r = 1; r < rows - 1; r++) {
+        for (let c = 1; c < cols - 1; c++) {
+            if (terrainMap[r][c] !== 'water') {
+                const adj = [[r-1,c],[r+1,c],[r,c-1],[r,c+1]];
+                if (adj.some(([ar,ac]) => terrainMap[ar]?.[ac] === 'water') && terrainMap[r][c] !== 'lava') {
+                    terrainMap[r][c] = 'stone';
+                }
+            }
+        }
+    }
+}
+
+// ─── MAP VARIANT: CAVE — all stone, no grass/trees, extra lava, permanent dim ───
+function applyCaveVariant() {
+    const cols = Math.ceil(WORLD_W / TILE), rows = Math.ceil(WORLD_H / TILE);
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            const t = terrainMap[r][c];
+            if (t === 'grass1' || t === 'grass2' || t === 'dirt' || t === 'flower') {
+                terrainMap[r][c] = 'stone';
+            }
+        }
+    }
+    // Extra lava pools (2-4 more)
+    const centerR = Math.floor(rows / 2), centerC = Math.floor(cols / 2);
+    const extraPools = 2 + Math.floor(Math.random() * 3);
+    for (let p = 0; p < extraPools; p++) {
+        let cr, cc;
+        do {
+            cr = 10 + Math.floor(Math.random() * (rows - 20));
+            cc = 10 + Math.floor(Math.random() * (cols - 20));
+        } while (Math.abs(cr - centerR) < 15 && Math.abs(cc - centerC) < 15);
+        const baseR = 2 + Math.floor(Math.random() * 5);
+        for (let dr = -baseR - 1; dr <= baseR + 1; dr++) {
+            for (let dc = -baseR - 1; dc <= baseR + 1; dc++) {
+                const nr = cr + dr, nc = cc + dc;
+                if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue;
+                const d = Math.hypot(dr, dc);
+                if (d <= baseR) terrainMap[nr][nc] = 'lava';
+                else if (d <= baseR + 1 && terrainMap[nr][nc] !== 'lava') terrainMap[nr][nc] = 'stone';
+            }
+        }
+    }
+}
+
 // ─── SAILOR / PIRATE WORLD: invert land and water ───
 function applySailorWorldTerrain() {
     const cols = Math.ceil(WORLD_W / TILE), rows = Math.ceil(WORLD_H / TILE);

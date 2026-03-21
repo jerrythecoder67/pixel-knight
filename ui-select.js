@@ -29,6 +29,11 @@ function selectPet(key) {
     state.shopLockedPrices = {};
     state.killedByCroc = false;
     state.killedBySalamander = false;
+    state.mapVariant = 'normal';
+    state.activeEvent = null;
+    state._eclipseActive = false; state._bloodMoonActive = false; state._earthquakeActive = false;
+    state._meteorActive = false; state._healSpringActive = false; state._frostActive = false;
+    state.weather = { stage: 0, wavesLeft: 0, extreme: null, rainParticles: [], lightningFlash: 0, tornadoX: WORLD_W/2, tornadoY: WORLD_H/2 };
     state.dragonRitualInLava = false;
     state.dragonRitualCrocHit = false;
     state.hasRubixCube = false;
@@ -80,6 +85,25 @@ function selectPet(key) {
         if (state.player.charAstronaut) {
             state.humanExplorers.forEach(h => { h.isAlly = true; });
             state.alienExplorers.forEach(a => { a.hp *= 2; a.maxHp = a.hp; a.damage *= 2; a.speed *= 1.5; });
+        }
+    }
+    // Map variant selection (before spawnTrees so water tiles filter correctly)
+    {
+        const vRoll = Math.random();
+        if (vRoll < 0.50)       { state.mapVariant = 'normal'; }
+        else if (vRoll < 0.667) { state.mapVariant = 'island';  applyIslandVariant(); }
+        else if (vRoll < 0.833) { state.mapVariant = 'canyon';  applyCanyonVariant(); }
+        else                    { state.mapVariant = 'cave';    applyCaveVariant(); }
+        if (state.mapVariant === 'cave') {
+            state.dayNight.phase = 'day'; // no night cycle
+            state.dayNight.alpha = 0.45; // fixed dim atmosphere
+            state.dayNight.timer = 999999999;
+            state.dayNight.eveningShown = true;
+            showNotif('The cave is silent. Only stone and fire remain.');
+        } else if (state.mapVariant === 'island') {
+            showNotif('Island world — deep water surrounds the land.');
+        } else if (state.mapVariant === 'canyon') {
+            showNotif('Canyon world — a great chasm splits the earth.');
         }
     }
     spawnTrees();

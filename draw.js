@@ -2034,6 +2034,72 @@ function draw() {
         ctx.restore();
     }
 
+    // ─── WEATHER VISUALS ───
+    if (state.difficulty && !state.gameOver) {
+        const _wdr = state.weather;
+        const _wds = _wdr.extreme || (_wdr.stage > 0 ? WEATHER_STAGES[_wdr.stage] : null);
+        if (_wds && _wds.fogAlpha > 0) {
+            // Fog overlay
+            ctx.save();
+            ctx.fillStyle = _wdr.extreme?.name === 'Blizzard' ? `rgba(200,220,255,${_wds.fogAlpha})` : `rgba(80,90,100,${_wds.fogAlpha})`;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.restore();
+        }
+        // Rain streaks (screen-space)
+        if (_wdr.rainParticles.length > 0) {
+            ctx.save();
+            ctx.strokeStyle = _wdr.stage === 1 ? 'rgba(180,200,255,0.35)' : 'rgba(160,190,255,0.55)';
+            ctx.lineWidth = _wdr.stage >= 3 ? 1.5 : 1;
+            for (const r of _wdr.rainParticles) {
+                const sx = r.x - cx, sy = r.y - cy;
+                ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + r.vx * 3, sy + r.vy * 3); ctx.stroke();
+            }
+            ctx.restore();
+        }
+        // Lightning flash
+        if (_wdr.lightningFlash > 0) {
+            ctx.save();
+            ctx.fillStyle = `rgba(255,255,220,${_wdr.lightningFlash / 8 * 0.35})`;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.restore();
+        }
+        // Tornado visual (world-space spiral)
+        if (_wds?.tornado) {
+            ctx.save();
+            ctx.translate(_wdr.tornadoX - cx, _wdr.tornadoY - cy);
+            for (let ti = 0; ti < 5; ti++) {
+                const tr = 30 + ti * 20;
+                const ta = state.frame * 0.05 + ti * 0.8;
+                ctx.beginPath();
+                ctx.arc(0, 0, tr, ta, ta + Math.PI * 1.5);
+                ctx.strokeStyle = `rgba(150,170,200,${0.6 - ti * 0.1})`;
+                ctx.lineWidth = 4 - ti * 0.5;
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+        // Active event banner (top of screen)
+        if (state.activeEvent && state.activeEvent.timer > 0) {
+            const ev = state.activeEvent;
+            const frac = ev.duration > 0 ? ev.timer / ev.duration : 1;
+            ctx.save();
+            ctx.globalAlpha = Math.min(1, frac * 3, (1 - frac) * 3 + 0.3);
+            ctx.fillStyle = 'rgba(0,0,0,0.55)';
+            ctx.fillRect(0, 0, canvas.width, 18);
+            ctx.font = 'bold 9px monospace'; ctx.textAlign = 'center';
+            ctx.fillStyle = '#ffd700'; ctx.fillText(ev.name, canvas.width / 2, 13);
+            ctx.restore();
+        }
+        // Weather label (top-right corner)
+        if (_wds && _wds.name) {
+            ctx.save();
+            ctx.font = '8px monospace'; ctx.textAlign = 'right';
+            ctx.fillStyle = 'rgba(180,200,255,0.7)';
+            ctx.fillText(_wds.name, canvas.width - 8, 16);
+            ctx.restore();
+        }
+    }
+
     // ─── NIGHT OVERLAY + DAY CLOCK ───
     // Restore telescope zoom before screen-space overlays (night, HUD, etc.)
     if (state.telescopeActive) ctx.restore();
