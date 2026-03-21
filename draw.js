@@ -67,7 +67,7 @@ function _menuLerpColor(c1, c2, t) {
 function draw() {
     // StickWorld: intercept every fillRect — pure #000/#fff draw as-is, all other colours → white fill + black outline
     canvas.style.filter = '';
-    const _ispaleo = state.player && state.player.charPaleo;
+    const _ispaleo = state.dinoWorld;
     ctx.fillStyle = state.alienWorld ? '#06001a' : _ispaleo ? '#1e0c04' : (state.stickWorld ? '#ffffff' : '#1a1a2e'); ctx.fillRect(0, 0, canvas.width, canvas.height);
     let _swFR = null;
     if (state.stickWorld) {
@@ -237,7 +237,10 @@ function draw() {
             const fromLeft = Math.random() < 0.5;
             const sX = fromLeft ? -50 : 850;
             const sd = fromLeft ? 1 : -1;
-            const rC = () => _availChars[Math.floor(Math.random() * _availChars.length)];
+            const _usedChars = new Set(mb.entities.filter(e => e.type === 'char').map(e => e.key));
+            const _freeChars = _availChars.filter(k => !_usedChars.has(k));
+            const _charPool = _freeChars.length > 0 ? _freeChars : _availChars;
+            const rC = () => _charPool[Math.floor(Math.random() * _charPool.length)];
             const rE = () => _availEnemies[Math.floor(Math.random() * _availEnemies.length)];
             if (roll < 0.25) {
                 // Single char walking
@@ -772,7 +775,7 @@ function draw() {
                 ctx.fillRect(sx + 6, sy + 8, 8, 3); ctx.fillRect(sx + 18, sy + 20, 5, 3);
             }
             // Paleo world: scattered bone fragments on dirt
-            if (state.player && state.player.charPaleo && (r * 7 + c * 11) % 9 === 0) {
+            if (state.dinoWorld && (r * 7 + c * 11) % 9 === 0) {
                 ctx.fillStyle = 'rgba(220,200,170,0.55)';
                 const bx2 = sx + (r * 5 + c * 3) % 18 + 2, by2 = sy + (r * 3 + c * 7) % 18 + 2;
                 ctx.fillRect(bx2, by2, 7, 2); ctx.fillRect(bx2 + 2, by2 - 2, 2, 6); // cross bone
@@ -786,7 +789,7 @@ function draw() {
             if ((r + c) % 2 === 0) { ctx.fillRect(sx + 4, sy + 12, 14, 2); }
             else { ctx.fillRect(sx + 10, sy + 4, 2, 18); }
             // Paleo world: bone fragments on stone too
-            if (state.player && state.player.charPaleo && (r * 13 + c * 7) % 11 === 0) {
+            if (state.dinoWorld && (r * 13 + c * 7) % 11 === 0) {
                 ctx.fillStyle = 'rgba(210,190,155,0.45)';
                 const bx3 = sx + (r * 7 + c * 5) % 16 + 2, by3 = sy + (r * 5 + c * 9) % 16 + 2;
                 ctx.fillRect(bx3, by3, 6, 2); ctx.fillRect(bx3 + 2, by3 - 1, 2, 5);
@@ -2177,7 +2180,8 @@ function draw() {
         // Oxygen bar — drawn under the player (rendered in drawPlayer pass instead)
     }
 
-    // ─── Day/Night Clock (pixel art) ───
+    // ─── Day/Night Clock (pixel art) — only during active gameplay ───
+    if (state.difficulty && !state.gameOver) {
     ctx.save();
     {
         const EVENING_FRAMES = 600;
@@ -2261,6 +2265,7 @@ function draw() {
         ctx.fillText(phaseLabel, cx, cy + r + 24);
     }
     ctx.restore();
+    } // end clock guard
 
     // Witch potion indicator (bottom right, when potion is brewed)
     if (state.player.charWitch && state.player.witchPotionReady) {

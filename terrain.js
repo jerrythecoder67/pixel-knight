@@ -154,7 +154,7 @@ const FOREST_SEEDS = (function generateForestSeeds() {
             fr = 15 + Math.floor(Math.random() * (rows - 30));
             fc = 15 + Math.floor(Math.random() * (cols - 30));
             attempts++;
-        } while (attempts < 30 && (Math.abs(fr - centerR) < 10 && Math.abs(fc - centerC) < 10));
+        } while (attempts < 30 && (Math.abs(fr - centerR) < 10 || Math.abs(fc - centerC) < 10));
         seeds.push({ cr: fr, cc: fc, radius: 3 + Math.floor(Math.random() * 2), type: 'redwood' });
     }
     return seeds;
@@ -273,8 +273,8 @@ const lavaPools = [];
     }
 })();
 
-// ─── PALEONTOLOGIST WORLD: rocky badlands — stone, dirt, bone dust ───
-function applyPaleoWorldTerrain() {
+// ─── DINO WORLD: rocky badlands — stone, dirt, bone dust ───
+function applyDinoWorldTerrain() {
     const cols = Math.ceil(WORLD_W / TILE), rows = Math.ceil(WORLD_H / TILE);
     for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {

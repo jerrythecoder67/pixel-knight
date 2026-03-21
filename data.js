@@ -1610,10 +1610,13 @@ const BESTIARY_INFO = {
     necromancer: { name:'Necromancer',   world:'standard', color:'#7c4dff', desc:'Raises skeletons from the dead. Fires bone rays. Very busy at all times.' },
     grimReaper:  { name:'Grim Reaper',   world:'standard', color:'#4a148c', desc:'Death itself. Scythe fan, soul drain, phase 2 ring burst. Not here to negotiate.' },
     // Alien world
-    xeno:        { name:'Xeno',          world:'alien',    color:'#69f0ae', desc:'Fast alien skirmisher. Skitters sideways. Has four eyes and no patience.' },
-    alienDrone:  { name:'Alien Drone',   world:'alien',    color:'#b2ff59', desc:'Fires plasma bolts. Part of a hive. Not really thinking for itself.' },
-    hiveMind:    { name:'Hive Mind',     world:'alien',    color:'#76ff03', desc:'Pulses psychic energy in waves. The brains of the operation — literally.' },
     parasite:    { name:'Parasite',      world:'alien',    color:'#ccff90', desc:'Attaches and drains. Very small, very persistent, very gross.' },
+    alienDrone:  { name:'Alien Drone',   world:'alien',    color:'#b2ff59', desc:'Fires plasma bolts. Part of a hive. Not really thinking for itself.' },
+    alienSwarmer:{ name:'Alien Swarmer', world:'alien',    color:'#ccff90', desc:'Tiny. Fast. Comes in packs of dozens. Each one is nothing. Together they\'re a problem.' },
+    xeno:        { name:'Xeno',          world:'alien',    color:'#69f0ae', desc:'Fast alien skirmisher. Skitters sideways. Has four eyes and no patience.' },
+    crystalloid: { name:'Crystalloid',   world:'alien',    color:'#ce93d8', desc:'Living crystal entity. Refracts light into prismatic blasts. Shatters loudly.' },
+    hiveMind:    { name:'Hive Mind',     world:'alien',    color:'#76ff03', desc:'Pulses psychic energy in waves. The brains of the operation — literally.' },
+    alienBrute:  { name:'Alien Brute',   world:'alien',    color:'#004d40', desc:'Massive armored alien warrior. Slow as a boulder. Hits like a meteor.' },
     alienQueen:  { name:'Alien Queen',   world:'alien',    color:'#00e5ff', desc:'Mother of the swarm. Egg bursts, psychic pull, enrages at half health. Regal.' },
     // Sailor world
     eel:         { name:'Eel',           world:'sailor',   color:'#4dd0e1', desc:'Lurks in the water. Shocks you on contact. Does not care where you are going.' },
@@ -1626,9 +1629,12 @@ const BESTIARY_INFO = {
     megalodon:   { name:'Megalodon',     world:'sailor',   color:'#546e7a', desc:'Ancient apex predator. Tail sweep, water rush, full enrage. Very not extinct.' },
     // Dino world
     raptor:      { name:'Raptor',        world:'dino',     color:'#8d6e63', desc:'Pack hunter. Boosts speed near allies. Clever girl.' },
+    compy:       { name:'Compsognathus', world:'dino',     color:'#a1887f', desc:'Tiny. Fast. Seems harmless. Is not harmless when there are thirty of them.' },
     pterodactyl: { name:'Pterodactyl',   world:'dino',     color:'#78909c', desc:'Circles overhead then dive-bombs. Screams the entire time.' },
+    stegosaurus: { name:'Stegosaurus',   world:'dino',     color:'#689f38', desc:'Plated back absorbs knockback. Swings its spiked tail like it owns the place.' },
     triceratops: { name:'Triceratops',   world:'dino',     color:'#5d4037', desc:'Charges in a straight line and will not stop. Three horns, zero brakes.' },
     ankylosaurus:{ name:'Ankylosaurus',  world:'dino',     color:'#4e342e', desc:'Armored tank. Tail swipe hits wide. Slow but impossibly hard to dent.' },
+    spinosaurus: { name:'Spinosaurus',   world:'dino',     color:'#455a64', desc:'Massive sail-backed predator. Slower than its rage suggests. Very, very large.' },
     trexBoss:    { name:'T-Rex King',    world:'dino',     color:'#e65100', desc:'King of the dinosaurs. Ground stomp, roar charge, enrages at 50%. Respect it.' },
 };
 const BESTIARY_WORLDS = [
@@ -1690,9 +1696,9 @@ const SKILL_TREE = {
 
 // ─── DIFFICULTY ───
 const DIFFICULTY_SETTINGS = {
-    easy:    { enemyHpMult: 1.0,  enemySpeedMult: 1.0,  enemyDmgMult: 1.0,  playerHpMult: 1.05, goldMult: 0.90, label: 'EASY' },
-    normal:  { enemyHpMult: 1.20, enemySpeedMult: 1.08, enemyDmgMult: 1.20, playerHpMult: 0.95, goldMult: 0.78, label: 'NORMAL' },
-    hard:    { enemyHpMult: 1.45, enemySpeedMult: 1.22, enemyDmgMult: 1.60, playerHpMult: 0.75, goldMult: 0.62, label: 'HARD' },
+    easy:    { enemyHpMult: 1.0,  enemySpeedMult: 1.0,  enemyDmgMult: 1.0,  playerHpMult: 1.05, goldMult: 0.90, spawnMult: 0.85, label: 'EASY' },
+    normal:  { enemyHpMult: 1.20, enemySpeedMult: 1.08, enemyDmgMult: 1.20, playerHpMult: 0.95, goldMult: 0.78, spawnMult: 1.0,  label: 'NORMAL' },
+    hard:    { enemyHpMult: 1.45, enemySpeedMult: 1.22, enemyDmgMult: 1.60, playerHpMult: 0.75, goldMult: 0.62, spawnMult: 1.2,  label: 'HARD' },
     extreme: { enemyHpMult: 5.0,  enemySpeedMult: 1.6,  enemyDmgMult: 2.0,  playerHpMult: 0.4,  goldMult: 0.4,  spawnMult: 1.5, label: 'EXTREME' }
 };
 

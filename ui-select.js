@@ -16,6 +16,7 @@ function selectPet(key) {
     // Reset world flags before applying character bonuses (so char bonuses can set them)
     state.sailorWorld = false;
     state.alienWorld = false;
+    state.dinoWorld = false;
     state.stickWorld = false;
     // Apply character bonuses now that all selections are done, then start game
     applyCharacterBonuses();
@@ -27,6 +28,9 @@ function selectPet(key) {
     state.shopLocks = {};
     state.shopLockedPrices = {};
     state.killedByCroc = false;
+    state.killedBySalamander = false;
+    state.dragonRitualInLava = false;
+    state.dragonRitualCrocHit = false;
     state.hasRubixCube = false;
     state.slipperyPatches = [];
     state.janitorPickupWindow = [];
@@ -48,12 +52,14 @@ function selectPet(key) {
     }
     persist.hasPlayed = true; savePersist(persist);
     state.runStartTime = Date.now();
+    document.getElementById('right-panel').classList.remove('hidden');
     spawnCrocodiles();
     spawnSalamanders();
     spawnFishAndSharks();
-    // Paleo world: rocky badlands terrain
-    if (state.player.charPaleo) {
-        applyPaleoWorldTerrain();
+    // Dino world: rocky badlands terrain (paleontologist OR dinosaur character)
+    if (state.player.charPaleo || state.player.charDinosaur) {
+        state.dinoWorld = true;
+        applyDinoWorldTerrain();
     }
     // Apply sailor/pirate world BEFORE spawnTrees so trees filter correctly
     if (state.player.charSailor || state.player.charPirate) {

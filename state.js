@@ -14,6 +14,7 @@ const state = {
         animFrame: 0, animTimer: 0,
         phoenixUsed: false, cloneAttackTimer: 0,
         bossesKilled: 0, unlockedEnemyTypes: 1,
+        unlockedDinoTypes: 2, unlockedSailorTypes: 2, unlockedAlienTypes: 2,
         streak: 0, streakTimer: 0, streakMult: 1,
         sizeScale: 1, damageMult: 1, orbAngle: 0,
         pet: null, petLevel: 0, chickenTimer: 0,
@@ -87,6 +88,7 @@ const state = {
     wizardTrialActive: false,
     wizardTrialWaveTarget: 20,
     alienWorld: false,
+    dinoWorld: false,
     underwater: false,
     sailorWorld: false,
     stickWorld: false,
@@ -95,6 +97,9 @@ const state = {
     slipperyPatches: [],
     janitorPickupWindow: [],
     menuBg: null,
+    joyDir: null,        // { x, y } — virtual joystick input (-1..1)
+    gamepadDir: null,    // { x, y } — right-stick aim direction
+    gamepadActive: false,
 };
 // Build pet overlay dynamically (will be called after DOM ready and after achievements grant pets)
 // Deferred until after function definitions below.

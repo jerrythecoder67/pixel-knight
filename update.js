@@ -220,6 +220,7 @@ function update() {
     if (state.keys['s'] || state.keys['arrowdown']) dy += 1;
     if (state.keys['a'] || state.keys['arrowleft']) dx -= 1;
     if (state.keys['d'] || state.keys['arrowright']) dx += 1;
+    if (state.joyDir) { dx += state.joyDir.x; dy += state.joyDir.y; }
     if (dx !== 0 || dy !== 0) {
         const len = Math.hypot(dx, dy); dx /= len; dy /= len;
         let spd = p.speed;
@@ -984,13 +985,17 @@ function update() {
                     // Soul Drain
                     if (!e.soulDrainTimer) e.soulDrainTimer = phase2 ? 160 : 220;
                     e.soulDrainTimer--;
-                    if (e.soulDrainTimer <= 0 && dist < 450) {
-                        e.soulDrainTimer = phase2 ? 150 : 210;
-                        const pullD = dist || 1;
-                        p.x += (edx / pullD) * (phase2 ? 55 : 38); p.y += (edy / pullD) * (phase2 ? 55 : 38);
-                        p.hp -= phase2 ? 22 : 14;
-                        showNotif('☠ Soul Drain!');
-                        for (let k = 0; k < 12; k++) state.particles.push({ x: p.x + (Math.random()-0.5)*20, y: p.y + (Math.random()-0.5)*20, vx: (edx / pullD) * 2.5, vy: (edy / pullD) * 2.5, life: 45, color: '#8800ff' });
+                    if (e.soulDrainTimer <= 0) {
+                        if (dist < 450) {
+                            e.soulDrainTimer = phase2 ? 150 : 210;
+                            const pullD = dist || 1;
+                            p.x += (edx / pullD) * (phase2 ? 55 : 38); p.y += (edy / pullD) * (phase2 ? 55 : 38);
+                            p.hp -= phase2 ? 22 : 14;
+                            showNotif('☠ Soul Drain!');
+                            for (let k = 0; k < 12; k++) state.particles.push({ x: p.x + (Math.random()-0.5)*20, y: p.y + (Math.random()-0.5)*20, vx: (edx / pullD) * 2.5, vy: (edy / pullD) * 2.5, life: 45, color: '#8800ff' });
+                        } else {
+                            e.soulDrainTimer = 30; // retry soon when player gets close
+                        }
                     }
                     // Teleport behind player (phase 2 only)
                     if (phase2) {
@@ -1501,9 +1506,26 @@ function update() {
                     state.paused = true;
                     showPostReaperOverlay(e.type);
                 } else {
-                    if (p.unlockedEnemyTypes < ENEMY_TYPES.length) {
-                        p.unlockedEnemyTypes++;
-                        showNotif('New enemy unlocked: ' + ENEMY_TYPES[p.unlockedEnemyTypes - 1].type.toUpperCase() + '!');
+                    if (state.dinoWorld) {
+                        if (p.unlockedDinoTypes < DINO_ENEMY_TYPES.length) {
+                            p.unlockedDinoTypes++;
+                            showNotif('New dino threat: ' + DINO_ENEMY_TYPES[p.unlockedDinoTypes - 1].type.toUpperCase() + '!');
+                        }
+                    } else if (state.sailorWorld) {
+                        if (p.unlockedSailorTypes < SAILOR_ENEMY_TYPES.length) {
+                            p.unlockedSailorTypes++;
+                            showNotif('New sea creature: ' + SAILOR_ENEMY_TYPES[p.unlockedSailorTypes - 1].type.toUpperCase() + '!');
+                        }
+                    } else if (state.alienWorld) {
+                        if (p.unlockedAlienTypes < ALIEN_ENEMY_TYPES.length) {
+                            p.unlockedAlienTypes++;
+                            showNotif('New alien form: ' + ALIEN_ENEMY_TYPES[p.unlockedAlienTypes - 1].type.toUpperCase() + '!');
+                        }
+                    } else {
+                        if (p.unlockedEnemyTypes < ENEMY_TYPES.length) {
+                            p.unlockedEnemyTypes++;
+                            showNotif('New enemy unlocked: ' + ENEMY_TYPES[p.unlockedEnemyTypes - 1].type.toUpperCase() + '!');
+                        }
                     }
                 }
             }
@@ -2703,11 +2725,12 @@ function update() {
         const reaperInterval = state.difficulty === 'extreme' ? 40 : 20;
         if (p.wave % bossInterval === 0) {
             // Check for world final boss at reaper-interval multiples
-            if (p.wave % reaperInterval === 0 && (
-                p.charPaleo || state.sailorWorld || state.alienWorld ||
-                p.unlockedEnemyTypes >= ENEMY_TYPES.length
-            )) {
-                if (p.charPaleo) spawnTRexBoss();
+            const _worldAllDone = state.dinoWorld ? (p.unlockedDinoTypes >= DINO_ENEMY_TYPES.length)
+                : state.sailorWorld ? (p.unlockedSailorTypes >= SAILOR_ENEMY_TYPES.length)
+                : state.alienWorld ? (p.unlockedAlienTypes >= ALIEN_ENEMY_TYPES.length)
+                : (p.unlockedEnemyTypes >= ENEMY_TYPES.length);
+            if (p.wave % reaperInterval === 0 && _worldAllDone) {
+                if (state.dinoWorld) spawnTRexBoss();
                 else if (state.sailorWorld) spawnMegalodonBoss();
                 else if (state.alienWorld) spawnAlienQueenBoss();
                 else spawnGrimReaper();
@@ -3186,6 +3209,7 @@ function endGame() {
         state.wizardTrialActive = false;
     }
     state.gameOver = true;
+    document.getElementById('right-panel').classList.add('hidden');
     const p = state.player;
     // Bob unlock: lose 10 runs
     persist.totalLosses = (persist.totalLosses || 0) + 1;
@@ -3234,7 +3258,6 @@ function endGame() {
     if (p.character === 'dinosaur') {
         persist.fossilPos = { x: Math.round(p.x), y: Math.round(p.y) };
         savePersist(persist);
-        showNotif('A fossil of you remains... Find it as another character and press E!');
     }
     // Dragon ritual: die to salamander as dinosaur after standing in lava AND getting hit by a croc in lava
     if (state.killedBySalamander && p.character === 'dinosaur' && state.dragonRitualInLava && state.dragonRitualCrocHit) {
@@ -3269,7 +3292,71 @@ function endGame() {
     const newBestWave = p.wave > (persist.bestWave || 0);
     if (newBestWave) persist.bestWave = p.wave;
     savePersist(persist);
-    document.getElementById('overlay').classList.remove('hidden');
+    // Death transition: red hold → fade to black → pixelated overlay reveal
+    (function runDeathTransition() {
+        const dc = document.getElementById('death-canvas');
+        const overlayEl = document.getElementById('overlay');
+        const pixTile = document.getElementById('pix-tile');
+        const pixMorph = document.getElementById('pix-morph');
+        if (!dc || !pixTile) { overlayEl.classList.remove('hidden'); return; }
+        dc.width = 800; dc.height = 600;
+        dc.style.display = 'block';
+        dc.style.opacity = '1';
+        const dtx = dc.getContext('2d');
+        let phase = 0; // 0=red, 1=fade-to-black, 2=pixelate-in
+        let tick = 0;
+        const RED_HOLD = 22;   // ~370ms
+        const FADE_TICKS = 30; // ~500ms
+        // Block sizes: large (blocky) → 1 (full clarity)
+        const PIX_STEPS = [32, 24, 16, 12, 8, 6, 4, 3, 2, 1];
+        const PIX_HOLD = 7; // frames per step
+        let pixIdx = 0;
+
+        function setPixel(bs) {
+            pixTile.setAttribute('width', bs);
+            pixTile.setAttribute('height', bs);
+            pixMorph.setAttribute('radius', Math.max(0, Math.floor(bs / 2) - 1));
+            overlayEl.style.filter = bs > 1 ? 'url(#pix-filter)' : '';
+        }
+
+        function step() {
+            tick++;
+            if (phase === 0) {
+                // Red hold — canvas solid red
+                dtx.fillStyle = '#cc0000'; dtx.fillRect(0, 0, 800, 600);
+                if (tick >= RED_HOLD) { phase = 1; tick = 0; }
+            } else if (phase === 1) {
+                // Fade canvas from red to black
+                const t = tick / FADE_TICKS;
+                const rv = Math.round(204 * (1 - t));
+                dtx.fillStyle = `rgb(${rv},0,0)`; dtx.fillRect(0, 0, 800, 600);
+                if (tick >= FADE_TICKS) {
+                    phase = 2; tick = 0; pixIdx = 0;
+                    dtx.fillStyle = '#000'; dtx.fillRect(0, 0, 800, 600);
+                    // Show overlay (canvas still covers it with black)
+                    overlayEl.classList.remove('hidden');
+                    setPixel(PIX_STEPS[0]);
+                }
+            } else if (phase === 2) {
+                // Each step: decrease block size (overlay gets sharper), fade canvas out
+                if (tick === 1) setPixel(PIX_STEPS[pixIdx]);
+                // Canvas fades out as we progress through pixel steps
+                const progress = pixIdx / PIX_STEPS.length;
+                dc.style.opacity = String(Math.max(0, 1 - progress));
+                dtx.fillStyle = '#000'; dtx.fillRect(0, 0, 800, 600);
+                if (tick >= PIX_HOLD) {
+                    tick = 0; pixIdx++;
+                    if (pixIdx >= PIX_STEPS.length) {
+                        overlayEl.style.filter = '';
+                        dc.style.display = 'none';
+                        return;
+                    }
+                }
+            }
+            requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+    })();
     document.getElementById('overlay-stats').innerHTML =
         'Day: <b>' + day + '</b> &nbsp;|&nbsp; Kills: ' + p.kills +
         ' &nbsp;|&nbsp; Wave: ' + p.wave + ' &nbsp;|&nbsp; Bosses: ' + p.bossesKilled +
@@ -3296,18 +3383,34 @@ function endGame() {
     if (histDiv) {
         const pastRuns = (persist.runHistory || []).slice(1);
         if (pastRuns.length > 0) {
+            const _CHAR_ABBREV = {
+                paleontologist:'Paleo', astronaut:'Astro', fashionModel:'Model',
+                monsterTamer:'Tamer', lumberjack:'Lumber', rubixCuber:'Rubix',
+                commander:'Cmdr', scientist:'Sci', koolKat:'KoolKat',
+                stickman:'Stickman', librarian:'Librar', youtuber:'YTuber',
+                monsterChar:'Monster', oldMan:'OldMan', engineer:'Eng',
+            };
+            const _diffLabel = { easy: 'EZ', normal: 'NRM', hard: 'HRD', extreme: 'XTR' };
+            const _abbr = (s, max) => s.length > max ? s.slice(0, max - 1) + '…' : s;
             histDiv.innerHTML = '<div class="run-hist-title">RECENT RUNS</div>' +
+                '<table class="run-hist-table"><thead><tr>' +
+                '<th>CHARACTER</th><th>DAY</th><th>WAVE</th><th>KILLS</th><th>BOSSES</th><th>DIFF</th><th>DATE</th>' +
+                '</tr></thead><tbody>' +
                 pastRuns.slice(0, 9).map(r => {
                     const charDef = CHARACTERS[r.character];
-                    const charName = charDef ? charDef.name : (r.character || 'Knight');
-                    return '<div class="run-hist-row">' +
-                        '<span class="rh-char">' + charName + '</span>' +
-                        '<span class="rh-day">Day ' + (r.day || '?') + '</span>' +
-                        '<span class="rh-wave">W' + (r.wave || 1) + '</span>' +
-                        '<span class="rh-kills">' + (r.kills || 0) + 'k</span>' +
-                        '<span class="rh-diff">' + (r.difficulty || 'normal') + '</span>' +
-                        '</div>';
-                }).join('');
+                    const fullName = charDef ? charDef.name : (r.character || 'Knight');
+                    const charName = _CHAR_ABBREV[r.character] || fullName;
+                    return '<tr>' +
+                        '<td class="rh-char">' + _abbr(charName, 10) + '</td>' +
+                        '<td class="rh-day">' + (r.day || '?') + '</td>' +
+                        '<td class="rh-wave">' + (r.wave || 1) + '</td>' +
+                        '<td class="rh-kills">' + (r.kills || 0).toLocaleString() + '</td>' +
+                        '<td class="rh-bosses">' + (r.bossesKilled || 0) + '</td>' +
+                        '<td class="rh-diff">' + (_diffLabel[r.difficulty] || (r.difficulty || 'NRM').slice(0,3).toUpperCase()) + '</td>' +
+                        '<td class="rh-date">' + (r.date || '') + '</td>' +
+                        '</tr>';
+                }).join('') +
+                '</tbody></table>';
         } else {
             histDiv.innerHTML = '';
         }

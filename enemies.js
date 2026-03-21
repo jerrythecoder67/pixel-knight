@@ -41,16 +41,22 @@ const SAILOR_ENEMY_TYPES = [
 
 const DINO_ENEMY_TYPES = [
     { type: 'raptor',       hp: 75,  speed: 2.6, color: '#558b2f', gold: 12, score: 130, size: 0.85 },
+    { type: 'compy',        hp: 28,  speed: 3.3, color: '#8d6e63', gold: 7,  score: 80,  size: 0.55 },
     { type: 'pterodactyl',  hp: 90,  speed: 1.8, color: '#78909c', gold: 18, score: 200, size: 0.9 },
+    { type: 'stegosaurus',  hp: 180, speed: 1.2, color: '#5d7c3a', gold: 28, score: 270, size: 1.2, knockbackResist: 0.4 },
     { type: 'triceratops',  hp: 260, speed: 0.9, color: '#4e7c59', gold: 32, score: 320, size: 1.4, knockbackResist: 0.35 },
     { type: 'ankylosaurus', hp: 420, speed: 0.5, color: '#795548', gold: 45, score: 430, size: 1.6, knockbackResist: 0.8 },
+    { type: 'spinosaurus',  hp: 520, speed: 0.55,color: '#37474f', gold: 58, score: 540, size: 1.75, knockbackResist: 0.5 },
 ];
 
 const ALIEN_ENEMY_TYPES = [
-    { type: 'xeno',      hp: 90,  speed: 2.1, color: '#00bfa5', gold: 15, score: 150, size: 1.0 },
-    { type: 'alienDrone',hp: 45,  speed: 3.2, color: '#b2ff59', gold: 8,  score: 90,  size: 0.8 },
-    { type: 'hiveMind',  hp: 250, speed: 1.2, color: '#69f0ae', gold: 50, score: 500, size: 1.4, knockbackResist: 0.2 },
-    { type: 'parasite',  hp: 30,  speed: 3.8, color: '#76ff03', gold: 6,  score: 60,  size: 0.7 },
+    { type: 'parasite',     hp: 30,  speed: 3.8, color: '#76ff03', gold: 6,  score: 60,  size: 0.7 },
+    { type: 'alienDrone',   hp: 45,  speed: 3.2, color: '#b2ff59', gold: 8,  score: 90,  size: 0.8 },
+    { type: 'alienSwarmer', hp: 20,  speed: 4.5, color: '#ccff90', gold: 5,  score: 55,  size: 0.55 },
+    { type: 'xeno',         hp: 90,  speed: 2.1, color: '#00bfa5', gold: 15, score: 150, size: 1.0 },
+    { type: 'crystalloid',  hp: 120, speed: 1.5, color: '#e040fb', gold: 22, score: 220, size: 1.05 },
+    { type: 'hiveMind',     hp: 250, speed: 1.2, color: '#69f0ae', gold: 50, score: 500, size: 1.4, knockbackResist: 0.2 },
+    { type: 'alienBrute',   hp: 380, speed: 0.75,color: '#004d40', gold: 55, score: 520, size: 1.8, knockbackResist: 0.65 },
 ];
 
 function drawEnemySprite(ctx, e, ex, ey) {
@@ -559,6 +565,74 @@ function drawEnemySprite(ctx, e, ex, ey) {
             ctx.fillRect(-6, -4, 1, 1); // eye
             break;
         }
+        case 'alienSwarmer': {
+            // Tiny aggressive swarmer — minimalist, pulsing lime
+            const swp = Math.sin(e.animTimer * 0.25) * 1.5;
+            ctx.fillStyle = e.color;
+            ctx.fillRect(-4, -4 + swp, 8, 8);
+            ctx.fillStyle = '#33691e';
+            // 4 thin limbs
+            ctx.fillRect(-8, -2 + swp, 4, 2); ctx.fillRect(4, -2 + swp, 4, 2);
+            ctx.fillRect(-2, -8 + swp, 2, 4); ctx.fillRect(-2, 4 + swp, 2, 4);
+            // Cycloptic eye
+            ctx.fillStyle = '#000'; ctx.fillRect(-1, -2 + swp, 2, 2);
+            ctx.fillStyle = '#f00'; ctx.fillRect(-1, -2 + swp, 1, 1);
+            break;
+        }
+        case 'crystalloid': {
+            // Crystal alien — geometric body, prismatic spikes
+            const cr = Math.floor(e.animTimer / 20) % 2;
+            // Crystal spikes radiating outward
+            ctx.fillStyle = '#ce93d8';
+            ctx.fillRect(-14, -3, 6, 5); ctx.fillRect(8, -3, 6, 5);
+            ctx.fillRect(-3, -14, 5, 6); ctx.fillRect(-3, 8, 5, 6);
+            // Diagonal crystals
+            ctx.fillStyle = '#ab47bc';
+            ctx.fillRect(-11, -11, 5, 5); ctx.fillRect(6, -11, 5, 5);
+            ctx.fillRect(-11, 6, 5, 5); ctx.fillRect(6, 6, 5, 5);
+            // Core body (octagonal-ish)
+            ctx.fillStyle = e.color;
+            ctx.fillRect(-8, -8, 16, 16);
+            // Inner facets
+            ctx.fillStyle = cr ? '#f3e5f5' : '#ce93d8';
+            ctx.fillRect(-4, -4, 8, 8);
+            // Glowing center
+            ctx.fillStyle = '#fff'; ctx.fillRect(-1, -1, 2, 2);
+            break;
+        }
+        case 'alienBrute': {
+            // Massive armored alien — hulking, slow, heavily plated
+            const ableg = Math.floor(e.animTimer / 14) % 2;
+            // Body (massive rectangular)
+            ctx.fillStyle = '#002b22';
+            ctx.fillRect(-16, -14, 32, 28);
+            // Armor plates
+            ctx.fillStyle = '#00695c';
+            ctx.fillRect(-14, -12, 12, 8); ctx.fillRect(2, -12, 12, 8);
+            ctx.fillRect(-14, -2, 12, 8); ctx.fillRect(2, -2, 12, 8);
+            ctx.fillRect(-14, 8, 12, 6); ctx.fillRect(2, 8, 12, 6);
+            // Plate ridges
+            ctx.fillStyle = '#004d40';
+            ctx.fillRect(-12, -10, 8, 2); ctx.fillRect(4, -10, 8, 2);
+            ctx.fillRect(-12, 0, 8, 2); ctx.fillRect(4, 0, 8, 2);
+            // Thick arms
+            ctx.fillStyle = '#004d40';
+            ctx.fillRect(-24, -10, 10, 12); ctx.fillRect(14, -10, 10, 12);
+            ctx.fillRect(-26, 0, 6, 8); ctx.fillRect(20, 0, 6, 8); // forearms
+            // Head (low-slung, armored)
+            ctx.fillStyle = '#002b22'; ctx.fillRect(-10, -22, 20, 10);
+            ctx.fillStyle = '#00695c'; // head plate
+            ctx.fillRect(-8, -20, 16, 7);
+            // Eyes (2 glowing slits)
+            ctx.shadowColor = '#69f0ae'; ctx.shadowBlur = 6;
+            ctx.fillStyle = '#69f0ae';
+            ctx.fillRect(-6, -17, 4, 2); ctx.fillRect(2, -17, 4, 2);
+            ctx.shadowBlur = 0;
+            // Legs
+            ctx.fillStyle = '#003d33';
+            ctx.fillRect(-12, 14, 9, 8 + (ableg ? 3 : 0)); ctx.fillRect(3, 14, 9, 8 + (ableg ? 0 : 3));
+            break;
+        }
         // ── SAILOR WORLD ENEMIES ──────────────────────────────────────
         case 'eel': {
             const ew = Math.sin(e.animTimer * 0.15) * 4;
@@ -896,6 +970,86 @@ function drawEnemySprite(ctx, e, ex, ey) {
             ctx.fillStyle = '#4e342e';
             ctx.fillRect(-10, 10, 6, 5 + (aleg ? 2 : 0)); ctx.fillRect(-2, 10, 6, 5 + (aleg ? 0 : 2));
             ctx.fillRect(5, 10, 6, 5 + (aleg ? 2 : 0)); ctx.fillRect(9, 10, 6, 5 + (aleg ? 0 : 2));
+            break;
+        }
+        case 'compy': {
+            // Tiny fast pack hunter — small bipedal, long neck, snapping jaws
+            const cleg = Math.floor(e.animTimer / 5) % 2;
+            // Tail (thin, counterbalance)
+            ctx.fillStyle = '#6d4c41'; ctx.fillRect(-10, -1, 8, 3); ctx.fillRect(-8, -3, 4, 2);
+            // Body (compact)
+            ctx.fillStyle = e.color; ctx.fillRect(-4, -4, 10, 8);
+            // Neck
+            ctx.fillStyle = '#795548'; ctx.fillRect(5, -7, 4, 5);
+            // Head
+            ctx.fillStyle = e.color; ctx.fillRect(6, -11, 7, 5);
+            // Jaw (snapping)
+            ctx.fillStyle = '#6d4c41'; ctx.fillRect(8, -6 + (Math.floor(e.animTimer / 15) % 2 ? 1 : 0), 5, 2);
+            // Eye
+            ctx.fillStyle = '#ffd600'; ctx.fillRect(8, -10, 2, 2);
+            ctx.fillStyle = '#000'; ctx.fillRect(8, -10, 1, 1);
+            // Tiny arms
+            ctx.fillStyle = '#6d4c41'; ctx.fillRect(3, -1, 3, 4); ctx.fillRect(5, 3, 2, 3);
+            // Legs
+            ctx.fillStyle = '#795548';
+            ctx.fillRect(-3, 4, 4, 5 + (cleg ? 2 : 0)); ctx.fillRect(2, 4, 4, 5 + (cleg ? 0 : 2));
+            break;
+        }
+        case 'stegosaurus': {
+            // Armored herbivore — back plates, spiked tail, quadruped
+            const sleg = Math.floor(e.animTimer / 10) % 2;
+            // Tail with spikes (thagomizer)
+            ctx.fillStyle = '#3e4d22'; ctx.fillRect(-22, 0, 12, 5);
+            ctx.fillStyle = '#8bc34a';
+            ctx.fillRect(-21, -5, 3, 6); ctx.fillRect(-16, -6, 3, 7); ctx.fillRect(-11, -4, 3, 5);
+            // Body
+            ctx.fillStyle = e.color; ctx.fillRect(-10, -6, 26, 14);
+            // Back plates (alternating row along spine)
+            ctx.fillStyle = '#8bc34a';
+            ctx.fillRect(-6, -14, 5, 9); ctx.fillRect(0, -17, 5, 12); ctx.fillRect(6, -14, 5, 9); ctx.fillRect(11, -11, 4, 6);
+            ctx.fillStyle = '#4caf50';
+            ctx.fillRect(-3, -12, 3, 7); ctx.fillRect(3, -15, 3, 9); ctx.fillRect(9, -12, 3, 7);
+            // Head (small, low)
+            ctx.fillStyle = '#4e6b2a'; ctx.fillRect(14, -4, 10, 6); ctx.fillRect(21, -2, 6, 4);
+            // Eye
+            ctx.fillStyle = '#ffd600'; ctx.fillRect(15, -3, 2, 2);
+            ctx.fillStyle = '#000'; ctx.fillRect(15, -3, 1, 1);
+            // 4 legs
+            ctx.fillStyle = '#3e4d22';
+            ctx.fillRect(-7, 8, 5, 6 + (sleg ? 2 : 0)); ctx.fillRect(0, 8, 5, 6 + (sleg ? 0 : 2));
+            ctx.fillRect(8, 8, 5, 6 + (sleg ? 2 : 0)); ctx.fillRect(13, 8, 5, 6 + (sleg ? 0 : 2));
+            break;
+        }
+        case 'spinosaurus': {
+            // Apex predator — large biped, iconic back sail, enormous jaws
+            const spleg = Math.floor(e.animTimer / 9) % 2;
+            // Tail
+            ctx.fillStyle = '#263238'; ctx.fillRect(-24, 0, 14, 7); ctx.fillRect(-20, -3, 8, 4);
+            // Body
+            ctx.fillStyle = e.color; ctx.fillRect(-10, -12, 26, 24);
+            // Back sail (iconic)
+            ctx.fillStyle = '#546e7a';
+            ctx.fillRect(-4, -26, 3, 15); ctx.fillRect(0, -30, 3, 19); ctx.fillRect(4, -28, 3, 17); ctx.fillRect(8, -24, 3, 13); ctx.fillRect(12, -19, 3, 8);
+            ctx.fillStyle = '#78909c'; // sail membrane
+            ctx.fillRect(-4, -26, 20, 3); ctx.fillRect(-3, -23, 18, 3); ctx.fillRect(-2, -20, 15, 3);
+            // Scales (rows)
+            ctx.fillStyle = '#455a64';
+            for (let i = 0; i < 3; i++) { ctx.fillRect(-6 + i * 7, -8, 5, 3); ctx.fillRect(-5 + i * 7, 2, 5, 3); }
+            // Neck + head
+            ctx.fillStyle = '#37474f'; ctx.fillRect(14, -16, 8, 10);
+            ctx.fillStyle = e.color; ctx.fillRect(18, -20, 16, 10);
+            // Jaws
+            ctx.fillStyle = '#263238'; ctx.fillRect(20, -10, 14, 4);
+            ctx.fillStyle = '#fff'; ctx.fillRect(22, -11, 2, 2); ctx.fillRect(26, -11, 2, 2); ctx.fillRect(30, -10, 2, 2);
+            // Eye
+            ctx.fillStyle = '#ef9a9a'; ctx.fillRect(20, -19, 3, 3);
+            ctx.fillStyle = '#000'; ctx.fillRect(21, -18, 2, 2);
+            // Arms (vestigial but visible)
+            ctx.fillStyle = '#455a64'; ctx.fillRect(10, -4, 8, 5); ctx.fillRect(16, 1, 5, 4);
+            // Legs
+            ctx.fillStyle = '#263238';
+            ctx.fillRect(-6, 12, 7, 9 + (spleg ? 3 : 0)); ctx.fillRect(2, 12, 7, 9 + (spleg ? 0 : 3));
+            ctx.fillRect(-4, 21, 4, 5); ctx.fillRect(4, 21, 4, 5);
             break;
         }
         case 'trexBoss': {

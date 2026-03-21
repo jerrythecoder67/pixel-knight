@@ -188,6 +188,24 @@ function spawnTrees() {
             const hp = type === 'pine' ? 8 : type === 'dead' ? 1 : type === 'fruit' ? 3 : type === 'redwood' ? 20 : 5;
             return { x: pos.tx, y: pos.ty, hp, maxHp: hp, hurtTimer: 0, treeType: type };
         });
+    // Lumberjack world: pack the world with extra trees (~4x density)
+    if (state.player.charAxeArc) {
+        const TYPES = ['oak', 'oak', 'oak', 'pine', 'pine', 'redwood'];
+        const extra = 1800;
+        const margin = 120;
+        for (let i = 0; i < extra; i++) {
+            const tx = margin + Math.random() * (WORLD_W - margin * 2);
+            const ty = margin + Math.random() * (WORLD_H - margin * 2);
+            // Skip water/lava, and keep spawn area clear
+            const t = getTerrainAt(tx, ty);
+            if (t === 'water' || t === 'lava') continue;
+            const dx = tx - WORLD_W / 2, dy = ty - WORLD_H / 2;
+            if (Math.abs(dx) < 160 && Math.abs(dy) < 160) continue;
+            const treeType = TYPES[Math.floor(Math.random() * TYPES.length)];
+            const hp = treeType === 'pine' ? 8 : treeType === 'redwood' ? 20 : 5;
+            state.trees.push({ x: tx, y: ty, hp, maxHp: hp, hurtTimer: 0, treeType });
+        }
+    }
 }
 
 // ─── SHOP ───

@@ -827,8 +827,9 @@ function hitEnemies(cx, cy, range, damage, isCrit = false, isExplosion = false) 
                 const kbdx = e.x - cx, kbdy = e.y - cy, kbd = Math.hypot(kbdx, kbdy) || 1;
                 const resist = e.knockbackResist || 0;
                 const bullMult = hasUpgrade('bull') ? 1.5 + upgradeLevel('bull') * 0.3 : 1;
-                e.x += (kbdx / kbd) * 10 * (1 - resist) * bullMult;
-                e.y += (kbdy / kbd) * 10 * (1 - resist) * bullMult;
+                const witchMult = p.charKnockbackMelee ? 3.5 : 1;
+                e.x += (kbdx / kbd) * 10 * (1 - resist) * bullMult * witchMult;
+                e.y += (kbdy / kbd) * 10 * (1 - resist) * bullMult * witchMult;
             }
             if (hasUpgrade('poisonTouch')) {
                 const dur = 300 + upgradeLevel('poisonTouch') * 60;

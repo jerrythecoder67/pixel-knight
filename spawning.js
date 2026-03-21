@@ -20,28 +20,26 @@ function buildWaveQueue(isHorde) {
     state.waveEnemiesKilled = 0;
     const prefix = isHorde ? 'horde:' : '';
     const queue = [];
-    // Paleontologist: fight dinosaurs
-    if (state.player.charPaleo) {
-        for (let i = 0; i < count; i++) {
-            queue.push(prefix + DINO_ENEMY_TYPES[Math.floor(Math.random() * DINO_ENEMY_TYPES.length)].type);
-        }
+    // Paleo world: fight dinosaurs (progressive unlock)
+    if (state.dinoWorld) {
+        const dinoSlice = DINO_ENEMY_TYPES.slice(0, Math.max(2, p.unlockedDinoTypes || 2));
+        for (let i = 0; i < count; i++) queue.push(prefix + dinoSlice[Math.floor(Math.random() * dinoSlice.length)].type);
         return queue;
     }
-    // Sailor world: use sailor enemy types
+    // Sailor world: use sailor enemy types (progressive unlock)
     if (state.sailorWorld) {
-        for (let i = 0; i < count; i++) {
-            queue.push(prefix + SAILOR_ENEMY_TYPES[Math.floor(Math.random() * SAILOR_ENEMY_TYPES.length)].type);
-        }
+        const sailorSlice = SAILOR_ENEMY_TYPES.slice(0, Math.max(2, p.unlockedSailorTypes || 2));
+        for (let i = 0; i < count; i++) queue.push(prefix + sailorSlice[Math.floor(Math.random() * sailorSlice.length)].type);
         return queue;
     }
-    // Alien world: use alien enemy types
+    // Alien world: use alien enemy types (progressive unlock)
     if (state.alienWorld) {
-        for (let i = 0; i < count; i++) {
-            queue.push(prefix + ALIEN_ENEMY_TYPES[Math.floor(Math.random() * ALIEN_ENEMY_TYPES.length)].type);
-        }
+        const alienSlice = ALIEN_ENEMY_TYPES.slice(0, Math.max(2, p.unlockedAlienTypes || 2));
+        for (let i = 0; i < count; i++) queue.push(prefix + alienSlice[Math.floor(Math.random() * alienSlice.length)].type);
         return queue;
     }
     const avail = getAvailableEnemyTypes(wave);
+    if (avail.length === 0) return queue;
     for (let i = 0; i < count; i++) {
         queue.push(prefix + avail[Math.floor(Math.random() * avail.length)].type);
     }
@@ -219,8 +217,8 @@ function spawnBoss(wave) {
         // Monster mode boss: use paladin (or captain at early waves)
         tmpl = wave < 10 ? HUMAN_ENEMY_TYPES.find(t => t.type === 'captain')
                          : HUMAN_ENEMY_TYPES.find(t => t.type === 'paladin');
-    } else if (state.player.charPaleo) {
-        // Paleontologist boss: triceratops (mid), ankylosaurus (late)
+    } else if (state.dinoWorld) {
+        // Paleo world boss: triceratops (mid), ankylosaurus (late)
         tmpl = wave < 15 ? DINO_ENEMY_TYPES.find(t => t.type === 'triceratops')
                          : DINO_ENEMY_TYPES.find(t => t.type === 'ankylosaurus');
     } else if (state.sailorWorld) {

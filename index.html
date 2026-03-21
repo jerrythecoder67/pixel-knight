@@ -38,11 +38,38 @@
                 </div>
             </div>
 
+            <!-- Death transition canvas -->
+            <canvas id="death-canvas" style="display:none;position:absolute;inset:0;z-index:490;pointer-events:none;width:100%;height:100%;"></canvas>
+
+            <!-- SVG pixelation filter (applied to overlay during death reveal) -->
+            <svg style="position:absolute;width:0;height:0;overflow:hidden;">
+                <filter id="pix-filter" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+                    <feFlood height="1" width="1" x="0" y="0" result="f"/>
+                    <feComposite id="pix-tile" width="32" height="32" in="f" result="tiled"/>
+                    <feTile in="tiled" result="t"/>
+                    <feComposite in="SourceGraphic" in2="t" operator="in" result="c"/>
+                    <feMorphology id="pix-morph" in="c" operator="dilate" radius="16"/>
+                </filter>
+            </svg>
+
+            <!-- Mobile / touch controls -->
+            <div id="mobile-controls">
+                <div id="joy-zone">
+                    <div id="joy-base"></div>
+                    <div id="joy-knob"></div>
+                </div>
+                <div id="mobile-btns">
+                    <button id="m-pause" class="m-btn">II</button>
+                    <button id="m-dash" class="m-btn">DASH</button>
+                    <button id="m-attack" class="m-btn m-atk">ATK</button>
+                </div>
+            </div>
+
             <!-- Fullscreen button (top-right corner) -->
             <button id="fs-btn" class="fs-box" title="Fullscreen (Tab)">[ ]</button>
 
             <!-- Right-side action buttons (stacked with consistent spacing) -->
-            <div id="right-panel">
+            <div id="right-panel" class="hidden">
                 <button id="shop-btn">SHOP</button>
                 <button id="blacksmith-btn">FORGE</button>
                 <button id="upgrade-btn" class="hidden">UPGRADES: 0</button>
@@ -509,6 +536,7 @@
     <script src="rubix.js"></script>
     <script src="update.js"></script>
     <script src="draw.js"></script>
+    <script src="controls.js"></script>
 </body>
 
 </html>

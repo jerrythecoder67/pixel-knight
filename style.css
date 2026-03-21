@@ -182,16 +182,18 @@ canvas {
     right: 12px;
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
     gap: 4px;
     pointer-events: none;
 }
+#right-panel.hidden { display: none; }
 #right-panel button { pointer-events: auto; }
 #right-panel button.hidden { display: none; }
 
 /* Shop button */
 #shop-btn {
-    font-size: 10px;
-    padding: 10px 14px;
+    font-size: 9px;
+    padding: 9px 5px;
     background: linear-gradient(135deg, #4a3800, #6b5200);
     border: 2px solid var(--accent-gold);
     color: var(--accent-gold);
@@ -208,8 +210,8 @@ canvas {
 
 /* Blacksmith button */
 #blacksmith-btn {
-    font-size: 10px;
-    padding: 10px 14px;
+    font-size: 9px;
+    padding: 9px 5px;
     background: linear-gradient(135deg, #2a1a00, #5a3a00);
     border: 2px solid #cd7f32;
     color: #cd7f32;
@@ -1045,6 +1047,7 @@ button:active {
 .pause-btn.danger { border-color: var(--accent-color); color: var(--accent-color); }
 .pause-btn.danger:hover { background: rgba(80,10,10,0.9); }
 
+
 @keyframes bossFlash {
     0% {
         opacity: 0.6;
@@ -1556,20 +1559,66 @@ button:active {
     color: var(--accent-gold); font-size: 8px;
 }
 
+/* ── Mobile Controls ── */
+#mobile-controls {
+    display: none; /* shown by JS on touch devices */
+    position: absolute; inset: 0; pointer-events: none; z-index: 200;
+}
+#joy-zone {
+    position: absolute; bottom: 24px; left: 24px;
+    width: 130px; height: 130px;
+    pointer-events: auto; touch-action: none;
+}
+#joy-base {
+    position: absolute; inset: 0; border-radius: 50%;
+    background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.2);
+}
+#joy-knob {
+    position: absolute; top: 50%; left: 50%;
+    width: 50px; height: 50px; border-radius: 50%;
+    background: rgba(255,255,255,0.25); border: 2px solid rgba(255,255,255,0.5);
+    transform: translate(-50%, -50%);
+    transition: none;
+}
+#mobile-btns {
+    position: absolute; bottom: 24px; right: 24px;
+    display: flex; flex-direction: row; gap: 12px; align-items: flex-end;
+    pointer-events: auto;
+}
+.m-btn {
+    width: 64px; height: 64px; border-radius: 50%;
+    font-family: var(--font-pixel); font-size: 9px; font-weight: bold;
+    border: 2px solid rgba(255,255,255,0.4);
+    background: rgba(30,30,50,0.75); color: #fff;
+    touch-action: none; user-select: none; cursor: pointer;
+}
+#m-atk {
+    width: 80px; height: 80px; font-size: 11px;
+    background: rgba(180,20,20,0.75); border-color: #f44;
+}
+#m-pause { font-size: 14px; width: 48px; height: 48px; }
+
 /* ── Run History ── */
 #overlay-run-history { margin: 6px 0 4px; }
 .run-hist-title { color: var(--accent-gold); font-size: 9px; letter-spacing: 1px; margin-bottom: 4px; }
-.run-hist-row {
-    display: flex; gap: 6px; align-items: center;
-    padding: 2px 6px; border-bottom: 1px solid rgba(255,255,255,0.05);
-    font-size: 8px; color: #bbb;
+.run-hist-table {
+    width: 100%; border-collapse: collapse; font-size: 8px; font-family: var(--font-pixel);
 }
-.run-hist-row:last-child { border-bottom: none; }
-.rh-char { color: #fff; min-width: 72px; font-size: 8px; }
-.rh-day  { color: var(--accent-gold); min-width: 38px; }
-.rh-wave { color: #aaa; min-width: 26px; }
-.rh-kills { color: #f44; min-width: 32px; }
-.rh-diff { color: #777; text-transform: capitalize; }
+.run-hist-table thead tr { background: rgba(255,215,0,0.08); }
+.run-hist-table th {
+    color: var(--accent-gold); padding: 2px 6px; text-align: left;
+    border-bottom: 1px solid rgba(255,215,0,0.25); font-size: 7px; letter-spacing: 0.5px;
+}
+.run-hist-table tbody tr { border-bottom: 1px solid rgba(255,255,255,0.05); }
+.run-hist-table tbody tr:last-child { border-bottom: none; }
+.run-hist-table td { padding: 2px 6px; white-space: nowrap; }
+.rh-char { color: #fff; max-width: 80px; overflow: hidden; text-overflow: ellipsis; }
+.rh-day  { color: var(--accent-gold); }
+.rh-wave { color: #aaa; }
+.rh-kills { color: #f66; }
+.rh-bosses { color: #c84; }
+.rh-diff { color: #777; }
+.rh-date { color: #555; font-size: 7px; }
 
 /* ── Bestiary Panel ── */
 #bestiary-panel {
