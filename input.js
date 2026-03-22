@@ -154,6 +154,18 @@ canvas.addEventListener('contextmenu', e => {
 });
 document.getElementById('restart-btn').addEventListener('click', () => location.reload());
 document.getElementById('reset-progress-btn').addEventListener('click', () => resetProgress());
+// MP death screen buttons
+document.getElementById('mp-spectate-btn').addEventListener('click', () => {
+    // Hide the death overlay, stay in spectate mode (camera follows host)
+    _mpDeathOverlayHide();
+});
+document.getElementById('mp-quit-btn').addEventListener('click', () => {
+    _mpDeathOverlayHide();
+    if (typeof mpDisconnect === 'function') mpDisconnect();
+});
+document.getElementById('mp-respawn-btn').addEventListener('click', () => {
+    if (typeof mpRequestRespawn === 'function') mpRequestRespawn();
+});
 document.getElementById('pause-reset-btn').addEventListener('click', () => resetProgress());
 document.getElementById('pause-ach-btn').addEventListener('click', () => openAchievementsPanel());
 document.getElementById('ach-panel-close').addEventListener('click', () => document.getElementById('ach-panel').classList.add('hidden'));
@@ -626,4 +638,24 @@ function toggleFullscreen() {
 }
 window.addEventListener('resize', () => { if (_fullscreenMode) applyFullscreenScale(); });
 document.getElementById('fs-btn').addEventListener('click', toggleFullscreen);
+
+// ─── DEV TOOLS ───
+// Type unlock_[charactername] in the browser console to unlock that character.
+// e.g. unlock_ninja, unlock_dragon, unlock_vampire
+(function _setupDevTools() {
+    Object.keys(CHARACTERS).forEach(name => {
+        Object.defineProperty(window, 'unlock_' + name, {
+            get() {
+                if (!persist.unlockedCharacters.includes(name)) {
+                    persist.unlockedCharacters.push(name);
+                    savePersist(persist);
+                }
+                console.log('[DevTool] Unlocked: ' + name);
+                return 'Unlocked ' + name;
+            },
+            configurable: true,
+        });
+    });
+    console.log('[DevTool] unlock_<name> commands ready. e.g. unlock_ninja');
+})();
 

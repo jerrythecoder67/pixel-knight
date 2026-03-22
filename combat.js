@@ -10,11 +10,17 @@ function playerAttack() {
         return;
     }
     state.player.attacking = true; state.player.attackCooldown = Math.round(wpn.cooldown * (state.player.attackSpeedMult || 1)); state.player.attackCount++;
-    // Melee attacks aim toward the mouse cursor (so you can run and attack behind you)
-    const _mx = state.mouse.x + state.camera.x, _my = state.mouse.y + state.camera.y;
-    const _md = Math.hypot(_mx - state.player.x, _my - state.player.y) || 1;
-    const fx = (_mx - state.player.x) / _md;
-    const fy = (_my - state.player.y) / _md;
+    // Attack direction: use joystick when active (mobile), otherwise mouse cursor
+    let fx, fy;
+    const _jd = state.joyDir;
+    if (_jd && (Math.abs(_jd.x) > 0.1 || Math.abs(_jd.y) > 0.1)) {
+        const _jl = Math.hypot(_jd.x, _jd.y) || 1;
+        fx = _jd.x / _jl; fy = _jd.y / _jl;
+    } else {
+        const _mx = state.mouse.x + state.camera.x, _my = state.mouse.y + state.camera.y;
+        const _md = Math.hypot(_mx - state.player.x, _my - state.player.y) || 1;
+        fx = (_mx - state.player.x) / _md; fy = (_my - state.player.y) / _md;
+    }
     // Snap sprite facing to attack direction; store exact attack vector for drawAttackEffect
     if (Math.abs(fx) > 0.1) state.player.facingX = fx;
     state.player.atkFX = fx; state.player.atkFY = fy;
@@ -47,9 +53,16 @@ function playerAttack() {
     drainDurability(wpnKey, wpnKey === 'dagger' || wpnKey === 'serpentFangs' ? 0.8 : 0.4);
 
     if (wpnKey === 'bow' || wpnKey === 'crossbow' || wpnKey === 'thunderbow') {
-        const mx = state.mouse.x + state.camera.x, my = state.mouse.y + state.camera.y;
-        const al = Math.hypot(mx - state.player.x, my - state.player.y) || 1;
-        const afx = (mx - state.player.x) / al, afy = (my - state.player.y) / al;
+        // Use joystick direction on mobile, mouse otherwise
+        let afx, afy;
+        if (_jd && (Math.abs(_jd.x) > 0.1 || Math.abs(_jd.y) > 0.1)) {
+            const _jl2 = Math.hypot(_jd.x, _jd.y) || 1;
+            afx = _jd.x / _jl2; afy = _jd.y / _jl2;
+        } else {
+            const mx = state.mouse.x + state.camera.x, my = state.mouse.y + state.camera.y;
+            const al = Math.hypot(mx - state.player.x, my - state.player.y) || 1;
+            afx = (mx - state.player.x) / al; afy = (my - state.player.y) / al;
+        }
         const cnt = hasUpgrade('multishot') ? 3 + upgradeLevel('multishot') : 1;
         for (let i = 0; i < cnt; i++) {
             const sp = cnt > 1 ? (i - Math.floor(cnt / 2)) * 0.25 : 0;

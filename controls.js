@@ -63,10 +63,6 @@ document.getElementById('m-dash').addEventListener('touchstart', e => {
     if (state.difficulty && !state.gameOver && !state.paused) tryDash();
 }, { passive: false });
 
-document.getElementById('m-pause').addEventListener('touchstart', e => {
-    e.preventDefault();
-    if (state.difficulty && !state.gameOver) togglePause();
-}, { passive: false });
 
 // ── Gamepad / Controller Support ──
 // Layout: Left stick = move, Right stick = aim, A=attack, B=dash,

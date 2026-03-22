@@ -618,35 +618,60 @@ function drawRemotePlayers() {
 
 // ── Death / Spectate (guest-side) ────────────────────────────────────────────
 
+function _mpDeathOverlayShow() {
+    // Show the game-over overlay as an MP death screen (without ending the run)
+    document.getElementById('overlay-title').textContent = 'YOU DIED';
+    document.getElementById('overlay-msg').textContent = 'You have fallen in battle.';
+    document.getElementById('overlay-stats').innerHTML = '';
+    document.getElementById('high-score-stats').textContent = '';
+    document.getElementById('overlay-achievements').innerHTML = '';
+    document.getElementById('overlay-run-history').innerHTML = '';
+    document.getElementById('overlay-endless-lb').innerHTML = '';
+    document.getElementById('restart-btn').classList.add('hidden');
+    document.getElementById('mp-spectate-btn').classList.remove('hidden');
+    document.getElementById('mp-quit-btn').classList.remove('hidden');
+    document.getElementById('mp-respawn-btn').classList.add('hidden');
+    document.getElementById('overlay').classList.remove('hidden');
+}
+
+function _mpDeathOverlayHide() {
+    document.getElementById('overlay').classList.add('hidden');
+    document.getElementById('restart-btn').classList.remove('hidden');
+    document.getElementById('mp-spectate-btn').classList.add('hidden');
+    document.getElementById('mp-quit-btn').classList.add('hidden');
+    document.getElementById('mp-respawn-btn').classList.add('hidden');
+    // Restore default overlay title/msg for the next real game over
+    document.getElementById('overlay-title').textContent = 'GAME OVER';
+    document.getElementById('overlay-msg').textContent = 'The shadows have claimed your soul.';
+}
+
 function mpGuestEnterSpectate() {
     if (MP._spectating) return; // already spectating, avoid double-trigger
     MP._spectating = true;
-    state.gameOver = false; // prevent endGame() death screen from showing
+    state.gameOver = false; // stay false — game loop keeps running for spectate
     state.player.hp = 0;
     // Clear all keys so the dead player doesn't keep moving
     for (const k in state.keys) state.keys[k] = false;
-    _mpShow('mp-spectate-overlay');
-    document.getElementById('mp-spectate-status').textContent = 'You died. Spectating...';
-    document.getElementById('mp-respawn-offer').classList.add('hidden');
+    _mpDeathOverlayShow();
 }
 
 function mpGuestReceiveRespawnOffer() {
     if (MP._respawnUsed) return; // already used
-    document.getElementById('mp-spectate-status').textContent = 'Respawn available!';
-    _mpShow('mp-respawn-offer');
+    document.getElementById('mp-respawn-btn').classList.remove('hidden');
 }
 
 function mpRequestRespawn() {
     if (!MP.active || MP.isHost || !MP.conns[0] || MP._respawnUsed) return;
     try { MP.conns[0].send({ type: 'respawnRequest' }); } catch(e) {}
-    document.getElementById('mp-respawn-offer').classList.add('hidden');
-    document.getElementById('mp-spectate-status').textContent = 'Respawning...';
+    _mpDeathOverlayHide();
+    MP._spectating = false;
+    showNotif('Respawning...');
 }
 
 function mpGuestReceiveRespawn(data) {
     MP._spectating = false;
     MP._respawnUsed = true;
-    _mpHide('mp-spectate-overlay');
+    _mpDeathOverlayHide();
     if (state.player) {
         state.player.hp = state.player.maxHp;
         if (data.x != null) { state.player.x = data.x; state.player.y = data.y; }
