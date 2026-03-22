@@ -30,8 +30,8 @@ window.addEventListener('keydown', e => {
                 persist.lifetimeGold = (persist.lifetimeGold || 0) + 100000000; // enough for rich
                 savePersist(persist);
                 showNotif('[DEV] All characters + achievements + bestiary unlocked!', true);
-            } else if (cmd.startsWith('unlock ')) {
-                const charKey = cmd.slice(7).trim().toLowerCase();
+            } else if (cmd.startsWith('unlock ') || cmd.startsWith('unlock_')) {
+                const charKey = cmd.slice(7).trim().toLowerCase().replace(/_/g, '');
                 const allKeys = Object.keys(CHARACTERS);
                 const match = allKeys.find(k => k.toLowerCase() === charKey) ||
                               allKeys.find(k => CHARACTERS[k].name.toLowerCase() === charKey);
@@ -59,6 +59,9 @@ window.addEventListener('keydown', e => {
 
     state.keys[e.key.toLowerCase()] = true;
     const k = e.key.toLowerCase();
+    // Block in-game hotkeys while the game-over/death overlay is visible
+    const _overlayOpen = document.getElementById('overlay') && !document.getElementById('overlay').classList.contains('hidden');
+    if (_overlayOpen) return;
     if (k === 'p') toggleShop();
     if (k === 'escape') togglePause();
     if (k === '1') { if (state.player.character === 'wizard') castRune(1); else equipSlot(1); }
@@ -639,23 +642,4 @@ function toggleFullscreen() {
 window.addEventListener('resize', () => { if (_fullscreenMode) applyFullscreenScale(); });
 document.getElementById('fs-btn').addEventListener('click', toggleFullscreen);
 
-// ─── DEV TOOLS ───
-// Type unlock_[charactername] in the browser console to unlock that character.
-// e.g. unlock_ninja, unlock_dragon, unlock_vampire
-(function _setupDevTools() {
-    Object.keys(CHARACTERS).forEach(name => {
-        Object.defineProperty(window, 'unlock_' + name, {
-            get() {
-                if (!persist.unlockedCharacters.includes(name)) {
-                    persist.unlockedCharacters.push(name);
-                    savePersist(persist);
-                }
-                console.log('[DevTool] Unlocked: ' + name);
-                return 'Unlocked ' + name;
-            },
-            configurable: true,
-        });
-    });
-    console.log('[DevTool] unlock_<name> commands ready. e.g. unlock_ninja');
-})();
 
