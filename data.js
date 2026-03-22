@@ -37,7 +37,7 @@ const ACHIEVEMENTS = {
     shadowDemonSlayer: { name: 'Shadow Demon Slayer',  icon: '👹', desc: 'Kill 3 shadow demons in one run',          reward: null },
     webbed:            { name: 'Webbed',               icon: '🕸',  desc: 'Survive 30 seconds stuck in spider webs', reward: 'pet:spider' },
     deathDefied:       { name: 'Death Defied',         icon: '💀', desc: 'Defeat the final boss of your world',      reward: null },
-    extinctionEvent:   { name: 'Extinction Event',     icon: '🦕', desc: 'Defeat the T-Rex as the Paleontologist',   reward: 'pet:dinopal' },
+    extinctionEvent:   { name: 'Extinction Event',     icon: '🦕', desc: 'Defeat the T-Rex as the Paleontologist or Dinosaur',   reward: 'pet:dinopal' },
     whaleOfATime:      { name: 'Whale of a Time',      icon: '🦈', desc: 'Defeat the Megalodon as the Sailor or Pirate', reward: 'pet:sharky' },
     firstContact:      { name: 'First Contact',        icon: '👽', desc: 'Defeat the Alien Queen as the Alien or Astronaut', reward: 'pet:littleGuy' },
     beyondDeath:       { name: 'Beyond Death',         icon: '👻', desc: 'Defeat the Grim Reaper in a standard world run', reward: 'pet:ghosty' },

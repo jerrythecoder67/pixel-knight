@@ -105,10 +105,15 @@ function drawEnemySprite(ctx, e, ex, ey) {
             ctx.fillRect(-2, 0, 1, 4); ctx.fillRect(1, 0, 1, 4);
             ctx.fillStyle = e.color;
             ctx.fillRect(-4, 6, 3, 6); ctx.fillRect(1, 6, 3, 6);
-            ctx.fillStyle = '#888';
-            ctx.fillRect(7, -8, 2, 14);
-            ctx.fillStyle = '#654';
-            ctx.fillRect(6, 4, 4, 3);
+            // Bow — curved stave and taut string
+            ctx.fillStyle = '#7b4f1e'; // dark wood stave
+            ctx.fillRect(7, -6, 3, 14);   // main stave body
+            ctx.fillRect(8, -9, 2, 4);    // top tip bends outward
+            ctx.fillRect(8, 8, 2, 4);     // bottom tip bends outward
+            ctx.fillStyle = '#c8a05a';    // stave highlight
+            ctx.fillRect(8, -5, 1, 12);
+            ctx.fillStyle = '#e8e0d0';    // bow string (taut)
+            ctx.fillRect(11, -9, 1, 21);
             break;
         }
         case 'wraith': {
@@ -1174,13 +1179,19 @@ function drawEnemySprite(ctx, e, ex, ey) {
 
     ctx.shadowBlur = 0;
 
-    // HP bar (regular enemies only — bosses use the top-of-screen boss bar in draw.js)
+    // HP bar — regular enemies show small bar; bosses show wider bar above crown
     if (e.hp < e.maxHp && !e.isBoss) {
         const hpFrac = Math.max(0, Math.min(1, e.hp / (e.maxHp || 1)));
         ctx.fillStyle = '#300';
         ctx.fillRect(-10, -20, 20, 3);
         ctx.fillStyle = '#f00';
         ctx.fillRect(-10, -20, 20 * hpFrac, 3);
+    }
+    if (e.isBoss) {
+        const hpFrac = Math.max(0, Math.min(1, e.hp / (e.maxHp || 1)));
+        ctx.fillStyle = '#300'; ctx.fillRect(-20, -36, 40, 5);
+        ctx.fillStyle = '#e53935'; ctx.fillRect(-20, -36, Math.round(40 * hpFrac), 5);
+        ctx.strokeStyle = '#ff0000'; ctx.lineWidth = 1; ctx.strokeRect(-20, -36, 40, 5);
     }
 
     // "Deal With It" sunglasses — kool kat coolness effect

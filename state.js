@@ -99,7 +99,7 @@ const state = {
     _meteorActive: false, _meteorTimer: 0, _healSpringActive: false, _healSpringTimer: 0,
     _frostActive: false,
     // Weather
-    weather: { stage: 0, wavesLeft: 0, extreme: null, rainParticles: [], lightningFlash: 0, tornadoX: WORLD_W/2, tornadoY: WORLD_H/2 },
+    weather: { stage: 0, wavesLeft: 0, extreme: null, rainParticles: [], lightningFlash: 0, tornadoX: WORLD_W/2, tornadoY: WORLD_H/2, fogPatches: [] },
     telescopeActive: false,
     hasRubixCube: false,
     slipperyPatches: [],
@@ -108,6 +108,7 @@ const state = {
     joyDir: null,        // { x, y } — virtual joystick input (-1..1)
     gamepadDir: null,    // { x, y } — right-stick aim direction
     gamepadActive: false,
+    mpMode: false,       // true after user confirms multiplayer
 };
 // Build pet overlay dynamically (will be called after DOM ready and after achievements grant pets)
 // Deferred until after function definitions below.

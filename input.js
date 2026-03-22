@@ -134,6 +134,7 @@ window.addEventListener('mousedown', (e) => {
     if (e.target.closest('button, input, select, #ui-layer')) return;
     state.mouseHeld = true;
     if (!state.player.charDragon) playerAttack();
+    state._mpAttacking = true; // tell host we attacked this frame
 });
 window.addEventListener('mouseup', () => { state.mouseHeld = false; });
 canvas.addEventListener('contextmenu', e => {
@@ -347,21 +348,21 @@ document.getElementById('lore-close-btn').addEventListener('click', () => {
 });
 document.getElementById('lb-btn').addEventListener('click', () => {
     const div = document.getElementById('lb-content');
-    const lb = persist.endlessLeaderboard || [];
-    const _fmtT = f => { const s = Math.floor(f/60); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); };
+    const lb = persist.leaderboard || [];
     if (lb.length === 0) {
-        div.innerHTML = '<p style="font-size:9px;color:#666;text-align:center;margin-top:16px;">No endless runs yet.<br>Beat the final boss and choose Keep Playing!</p>';
+        div.innerHTML = '<p style="font-size:9px;color:#666;text-align:center;margin-top:16px;">No runs yet.<br>Complete a run to appear here!</p>';
     } else {
         const _CA = { paleontologist:'Paleo', astronaut:'Astro', fashionModel:'Model', monsterTamer:'Tamer', lumberjack:'Lumber', commander:'Cmdr', scientist:'Sci', koolKat:'KoolKat', stickman:'Stick', oldMan:'OldMan', engineer:'Eng', rubixCuber:'Rubix' };
-        div.innerHTML = '<table class="lb-table"><thead><tr><th>#</th><th>CHARACTER</th><th>WAVE</th><th>KILLS</th><th>GOLD</th><th>TIME</th><th>DATE</th></tr></thead><tbody>' +
+        div.innerHTML = '<table class="lb-table"><thead><tr><th>#</th><th>CHAR</th><th>SCORE</th><th>WAVE</th><th>KILLS</th><th>DIFF</th><th>DATE</th></tr></thead><tbody>' +
             lb.map((e, i) => {
                 const charDef = CHARACTERS[e.character];
                 const cName = _CA[e.character] || (charDef ? charDef.name : e.character) || 'Knight';
                 return '<tr class="'+(i===0?'lb-rank1':'')+'">' +
                     '<td class="lb-rank">#'+(i+1)+'</td><td class="lb-char">'+cName+'</td>' +
-                    '<td class="lb-wave">'+e.wave+'</td><td class="lb-kills">'+(e.kills||0).toLocaleString()+'</td>' +
-                    '<td class="lb-gold">'+(e.gold||0).toLocaleString()+'</td>' +
-                    '<td class="lb-time">'+_fmtT(e.runTime||0)+'</td><td class="lb-date">'+(e.date||'')+'</td></tr>';
+                    '<td class="lb-wave">'+(e.score||0).toLocaleString()+'</td>' +
+                    '<td class="lb-kills">'+e.wave+'</td>' +
+                    '<td class="lb-gold">'+(e.kills||0).toLocaleString()+'</td>' +
+                    '<td class="lb-time">'+(e.difficulty||'normal')+'</td><td class="lb-date">'+(e.date||'')+'</td></tr>';
             }).join('') + '</tbody></table>';
     }
     document.getElementById('difficulty-overlay').classList.add('hidden');

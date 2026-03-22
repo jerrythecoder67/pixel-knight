@@ -180,9 +180,11 @@ function spawnAlienExplorers() {
 
 // ─── TREE SPAWNING ───
 function spawnTrees() {
-    // Filter out positions that are now on water (important for sailorWorld after terrain inversion)
+    // Cave has no trees (all stone underground)
+    if (state.mapVariant === 'cave') { state.trees = []; return; }
+    // Filter out positions on impassable/wet/barren tiles
     state.trees = WORLD_TREE_POSITIONS
-        .filter(pos => getTerrainAt(pos.tx, pos.ty) !== 'water')
+        .filter(pos => { const t = getTerrainAt(pos.tx, pos.ty); return t !== 'water' && t !== 'stone' && t !== 'void' && t !== 'sand' && t !== 'bridge'; })
         .map(pos => {
             const type = pos.treeType;
             const hp = type === 'pine' ? 8 : type === 'dead' ? 1 : type === 'fruit' ? 3 : type === 'redwood' ? 20 : 5;
@@ -198,7 +200,7 @@ function spawnTrees() {
             const ty = margin + Math.random() * (WORLD_H - margin * 2);
             // Skip water/lava, and keep spawn area clear
             const t = getTerrainAt(tx, ty);
-            if (t === 'water' || t === 'lava') continue;
+            if (t === 'water' || t === 'lava' || t === 'stone' || t === 'void' || t === 'sand') continue;
             const dx = tx - WORLD_W / 2, dy = ty - WORLD_H / 2;
             if (Math.abs(dx) < 160 && Math.abs(dy) < 160) continue;
             const treeType = TYPES[Math.floor(Math.random() * TYPES.length)];

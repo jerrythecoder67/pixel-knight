@@ -68,10 +68,11 @@ function spawnWaveEnemy(typeEntry) {
     const dm = state.diffMult;
     const reaperHpMult = p.charReaper ? 1.1 : 1;
     const hpMult = isHorde ? 0.4 : (isElite ? 2 : 1);
+    const mpHp = (typeof mpDiffMult === 'function') ? mpDiffMult() : 1;
     const e = {
         x, y, w: 16, h: 16, type: tmpl.type,
-        hp: tmpl.hp * ws * hpMult * dm.enemyHpMult * reaperHpMult,
-        maxHp: tmpl.hp * ws * hpMult * dm.enemyHpMult * reaperHpMult,
+        hp: tmpl.hp * ws * hpMult * dm.enemyHpMult * reaperHpMult * mpHp,
+        maxHp: tmpl.hp * ws * hpMult * dm.enemyHpMult * reaperHpMult * mpHp,
         speed: (tmpl.speed + p.wave * 0.04) * (isHorde ? 1.2 : 1) * (isElite ? 1.2 : 1) * dm.enemySpeedMult,
         color: isElite ? brighten(tmpl.color) : tmpl.color,
         gold: tmpl.gold * (isHorde ? 0.5 : isElite ? 3 : 1),

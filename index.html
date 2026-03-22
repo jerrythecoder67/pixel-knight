@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 </head>
 
 <body>
@@ -201,14 +202,71 @@
                 </div>
                 <button id="lore-btn">LORE</button>
                 <button id="lb-btn">LEADERBOARD</button>
+                <button id="mp-open-btn" onclick="document.getElementById('mp-overlay').classList.remove('hidden');document.getElementById('difficulty-overlay').classList.add('hidden');">MULTIPLAYER</button>
+
             </div>
 
             <!-- Endless Leaderboard Overlay -->
             <div id="leaderboard-overlay" class="hidden">
-                <h2>ENDLESS LEADERBOARD</h2>
-                <p class="upgrade-subtitle">Top 10 endless mode runs</p>
+                <h2>LEADERBOARD</h2>
+                <p class="upgrade-subtitle">Top 10 runs of all time</p>
                 <div id="lb-content"></div>
                 <button id="lb-close-btn">CLOSE</button>
+            </div>
+
+            <!-- Multiplayer Lobby -->
+            <div id="mp-overlay" class="hidden" style="position:absolute;inset:0;background:rgba(0,0,0,0.88);z-index:300;">
+                <div style="background:#111;border:2px solid #444;border-radius:12px;padding:32px 40px;min-width:340px;text-align:center;font-family:monospace;color:#fff;">
+                    <!-- Main menu -->
+                    <div id="mp-main-menu">
+                        <h2 style="letter-spacing:4px;margin-bottom:4px">MULTIPLAYER</h2>
+                        <p style="color:#888;font-size:12px;margin-bottom:20px">Up to 4 players • Shared world • WebRTC P2P</p>
+                        <p style="color:#aaa;font-size:12px;margin-bottom:12px">Use your currently selected character &amp; pet</p>
+                        <button class="diff-btn diff-normal" style="width:100%;margin-bottom:10px" onclick="mpHostGame()">HOST GAME</button>
+                        <div style="display:flex;gap:8px;margin-bottom:10px">
+                            <input id="mp-code-input" maxlength="6" placeholder="Room code" style="flex:1;padding:10px;font-size:18px;font-family:monospace;text-transform:uppercase;background:#1a1a2e;color:#fff;border:2px solid #444;border-radius:6px;text-align:center">
+                            <button class="diff-btn diff-easy" onclick="mpJoinGame(document.getElementById('mp-code-input').value)">JOIN</button>
+                        </div>
+                        <button class="diff-btn" style="width:100%;background:#2a2a2a" onclick="document.getElementById('mp-overlay').classList.add('hidden');document.getElementById('difficulty-overlay').classList.remove('hidden')">BACK</button>
+                        <div id="mp-status" style="margin-top:12px;color:#f44;font-size:12px;min-height:16px"></div>
+                    </div>
+                    <!-- Lobby panel -->
+                    <div id="mp-lobby-panel" class="hidden">
+                        <h2 style="letter-spacing:4px;margin-bottom:8px">LOBBY</h2>
+                        <div id="mp-lobby-status" style="color:#aaa;font-size:12px;margin-bottom:12px">Connecting...</div>
+                        <!-- Room code display (host only) -->
+                        <div id="mp-room-display" class="hidden" style="background:#1a1a2e;padding:10px 20px;border-radius:8px;margin-bottom:14px">
+                            <div style="color:#888;font-size:10px;letter-spacing:2px">ROOM CODE — share this!</div>
+                            <div id="mp-code-display" style="font-size:34px;font-weight:bold;color:#ffd700;letter-spacing:10px;margin:4px 0">------</div>
+                        </div>
+                        <div id="mp-player-list" style="margin-bottom:14px;font-size:13px;text-align:left"></div>
+                        <!-- Host controls -->
+                        <div id="mp-host-controls" class="hidden" style="display:flex;flex-direction:column;gap:10px;align-items:stretch">
+                            <div style="display:flex;gap:10px;justify-content:center;align-items:center">
+                                <label style="color:#ccc;font-size:13px">Map:</label>
+                                <select id="mp-map-select" style="background:#1a1a2e;color:#fff;border:1px solid #555;padding:5px 8px;border-radius:4px;font-family:monospace">
+                                    <option value="normal">Normal</option>
+                                    <option value="island">Island</option>
+                                    <option value="canyon">Canyon</option>
+                                    <option value="cave">Cave</option>
+                                </select>
+                                <label style="color:#ccc;font-size:13px">Diff:</label>
+                                <select id="mp-diff-select" style="background:#1a1a2e;color:#fff;border:1px solid #555;padding:5px 8px;border-radius:4px;font-family:monospace">
+                                    <option value="easy">Easy</option>
+                                    <option value="normal" selected>Normal</option>
+                                    <option value="hard">Hard</option>
+                                </select>
+                            </div>
+                            <label style="color:#ccc;font-size:13px;display:flex;gap:8px;align-items:center;justify-content:center;cursor:pointer">
+                                <input type="checkbox" id="mp-ff-toggle"> Friendly Fire / PvP mode
+                            </label>
+                            <button id="mp-start-btn" class="diff-btn diff-normal" onclick="mpStartGame()" disabled>START GAME</button>
+                        </div>
+                        <!-- Guest waiting -->
+                        <div id="mp-join-waiting" class="hidden" style="color:#aaa;font-size:13px;padding:10px">Waiting for host to start the game...</div>
+                        <button class="diff-btn" style="width:100%;background:#2a2a2a;margin-top:12px" onclick="mpDisconnect()">LEAVE</button>
+                    </div>
+                </div>
             </div>
 
             <!-- Lore Scroll -->
@@ -544,6 +602,19 @@
     <script src="combat.js"></script>
     <script src="spawning.js"></script>
     <script src="rubix.js"></script>
+    <script src="multiplayer.js"></script>
+    <script src="update/day_night.js"></script>
+    <script src="update/character_effects.js"></script>
+    <script src="update/player.js"></script>
+    <script src="update/enemies.js"></script>
+    <script src="update/creatures.js"></script>
+    <script src="update/nature.js"></script>
+    <script src="update/wave.js"></script>
+    <script src="update/events.js"></script>
+    <script src="update/weather.js"></script>
+    <script src="update/pets.js"></script>
+    <script src="update/hud.js"></script>
+    <script src="update/end_game.js"></script>
     <script src="update.js"></script>
     <script src="draw.js"></script>
     <script src="controls.js"></script>

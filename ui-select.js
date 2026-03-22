@@ -88,12 +88,22 @@ function selectPet(key) {
         }
     }
     // Map variant selection (before spawnTrees so water tiles filter correctly)
+    // In multiplayer, host picks the variant via lobby; _forcedMapVariant overrides the random roll
     {
+        const forced = (typeof MP !== 'undefined') ? MP._forcedMapVariant : null;
+        if (forced) {
+            state.mapVariant = forced;
+            if (forced === 'island') applyIslandVariant();
+            else if (forced === 'canyon') applyCanyonVariant();
+            else if (forced === 'cave') applyCaveVariant();
+            MP._forcedMapVariant = null;
+        } else {
         const vRoll = Math.random();
         if (vRoll < 0.50)       { state.mapVariant = 'normal'; }
         else if (vRoll < 0.667) { state.mapVariant = 'island';  applyIslandVariant(); }
         else if (vRoll < 0.833) { state.mapVariant = 'canyon';  applyCanyonVariant(); }
         else                    { state.mapVariant = 'cave';    applyCaveVariant(); }
+        }
         if (state.mapVariant === 'cave') {
             state.dayNight.phase = 'day'; // no night cycle
             state.dayNight.alpha = 0.45; // fixed dim atmosphere

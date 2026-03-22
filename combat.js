@@ -37,7 +37,7 @@ function playerAttack() {
     if (state.player.charShopper && state.player.gold > 0)
         baseDmg *= 1 + Math.floor(state.player.gold / 1000) * 0.01;
     // Drain durability per attack — very slowly, only on attack
-    drainDurability(wpnKey, wpnKey === 'dagger' || wpnKey === 'serpentFangs' ? 0.2 : 0.1);
+    drainDurability(wpnKey, wpnKey === 'dagger' || wpnKey === 'serpentFangs' ? 0.8 : 0.4);
 
     if (wpnKey === 'bow' || wpnKey === 'crossbow' || wpnKey === 'thunderbow') {
         const mx = state.mouse.x + state.camera.x, my = state.mouse.y + state.camera.y;
@@ -736,7 +736,7 @@ function playerAttack() {
             const spread = extraSlotIdx % 2 === 1 ? -0.25 : 0.25;
             const cs = Math.cos(spread), sn = Math.sin(spread);
             const sfx = afx * cs - afy * sn, sfy = afx * sn + afy * cs;
-            drainDurability(extraKey, 0.1);
+            drainDurability(extraKey, 0.4);
             if (extraKey === 'plasmaBlaster') {
                 state.projectiles.push({ x: state.player.x, y: state.player.y, vx: sfx * 11, vy: sfy * 11, damage: extraDmg, life: 55, type: 'plasma', piercing: true });
             } else if (extraKey === 'bow' || extraKey === 'crossbow' || extraKey === 'thunderbow') {
@@ -890,6 +890,7 @@ function tryDash() {
         }
     }
     p.dashing = true; p.dashTimer = 8; p.dashCooldown = cooldown;
+    state._mpDashing = true; // tell host we dashed this frame
     // Ninja: become invisible during dash, trigger post-dash slow
     if (p.charNinja) { p.ninjaInvisible = true; p.ninjaInvisTimer = 55; }
     // Rogue: shadowBlade becomes super-powered for 90 frames after dash

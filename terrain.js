@@ -27,13 +27,15 @@ const terrainMap = [];
             cc = 8 + Math.floor(Math.random() * (cols - 16));
         } while (Math.abs(cr - centerR) < 20 && Math.abs(cc - centerC) < 20);
         // Varied sizes and border widths, like water clusters
-        const baseRadius = 2 + Math.floor(Math.random() * 7);  // 2–8 tiles
-        const borderWidth = 1 + Math.floor(Math.random() * 4); // 1–4 tile stone border
+        const baseRadius = 3 + Math.floor(Math.random() * 4);  // 3–6 tiles (tighter range)
+        const borderWidth = 1 + Math.floor(Math.random() * 3); // 1–3 tile stone border
         // Unique noise params per pool for organic shape
         const ph1 = Math.random() * Math.PI * 2;
         const ph2 = Math.random() * Math.PI * 2;
-        const fr1 = 1 + Math.floor(Math.random() * 4); // low harmonic
-        const fr2 = 2 + Math.floor(Math.random() * 4); // high harmonic
+        const ph3 = Math.random() * Math.PI * 2;
+        const fr1 = 1 + Math.floor(Math.random() * 3); // 1-3 only (avoid 4-lobe '+' shape)
+        const fr2 = 2 + Math.floor(Math.random() * 3); // 2-4
+        const fr3 = 6 + Math.floor(Math.random() * 3); // 6-8 fine detail
         const maxScan = baseRadius * 2 + borderWidth;
         for (let dr = -maxScan; dr <= maxScan; dr++) {
             for (let dc = -maxScan; dc <= maxScan; dc++) {
@@ -42,8 +44,8 @@ const terrainMap = [];
                 if (terrainMap[tr][tc] === 'water') continue;
                 const dist = Math.sqrt(dr * dr + dc * dc);
                 const angle = Math.atan2(dr, dc);
-                // Organic radius via angle-based sine noise (same idea as water terrain)
-                const wobble = Math.sin(angle * fr1 + ph1) * 0.35 + Math.sin(angle * fr2 + ph2) * 0.2;
+                // Organic radius: low-freq shape + mid detail + fine noise
+                const wobble = Math.sin(angle * fr1 + ph1) * 0.28 + Math.sin(angle * fr2 + ph2) * 0.18 + Math.sin(angle * fr3 + ph3) * 0.1;
                 const lavaR = baseRadius * (1 + wobble);
                 const stoneR = lavaR + borderWidth;
                 if (dist <= lavaR) {
@@ -169,7 +171,7 @@ const WORLD_TREE_POSITIONS = [];
     for (let r = 2; r < rows - 2; r++) {
         for (let c = 2; c < cols - 2; c++) {
             const t = terrainMap[r][c];
-            if (t === 'water' || t === 'lava' || t === 'stone') continue;
+            if (t === 'water' || t === 'lava' || t === 'stone' || t === 'void') continue;
             // Keep clear around spawn
             if (Math.abs(r - centerR) < 6 && Math.abs(c - centerC) < 6) continue;
 
@@ -296,46 +298,103 @@ function applyDinoWorldTerrain() {
     }
 }
 
-// ─── MAP VARIANT: ISLAND — water border around the world ───
+// ─── MAP VARIANT: ISLAND — organic coastline with sand beach ───
 function applyIslandVariant() {
     const cols = Math.ceil(WORLD_W / TILE), rows = Math.ceil(WORLD_H / TILE);
-    const bw = 8 + Math.floor(Math.random() * 3); // 8-10 tile border
+    const centerR = rows / 2, centerC = cols / 2;
+    const ph1 = Math.random() * Math.PI * 2, ph2 = Math.random() * Math.PI * 2;
+    const ph3 = Math.random() * Math.PI * 2, ph4 = Math.random() * Math.PI * 2;
+    // Track only tiles converted BY the island variant (not pre-existing interior lakes)
+    const islandWater = new Set();
     for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
-            if (r < bw || r >= rows - bw || c < bw || c >= cols - bw) {
+            if (terrainMap[r][c] === 'water') continue; // skip pre-existing water
+            const dr = (r - centerR) / centerR, dc = (c - centerC) / centerC;
+            const dist = Math.sqrt(dr * dr + dc * dc);
+            const angle = Math.atan2(dr, dc);
+            const noise = Math.sin(angle * 3 + ph1) * 0.07
+                        + Math.sin(angle * 5 + ph2) * 0.04
+                        + Math.sin(angle * 9 + ph3) * 0.025
+                        + Math.sin(angle * 15 + ph4) * 0.012;
+            if (dist > 0.80 + noise) {
                 terrainMap[r][c] = 'water';
+                islandWater.add(r * 10000 + c);
             }
         }
     }
+    // Sand beach: expand 1-3 tiles inward from island border water only
+    const sandDepth = 1 + Math.floor(Math.random() * 3); // 1-3 tile beach width
+    let frontier = new Set();
+    for (let r = 1; r < rows - 1; r++) {
+        for (let c = 1; c < cols - 1; c++) {
+            if (terrainMap[r][c] === 'water') continue;
+            const adj4 = [[r-1,c],[r+1,c],[r,c-1],[r,c+1]];
+            if (adj4.some(([ar,ac]) => islandWater.has(ar*10000+ac))) frontier.add(r*10000+c);
+        }
+    }
+    for (let depth = 0; depth < sandDepth; depth++) {
+        const next = new Set();
+        for (const key of frontier) {
+            const r = Math.floor(key / 10000), c = key % 10000;
+            if (terrainMap[r][c] !== 'lava' && terrainMap[r][c] !== 'water') {
+                terrainMap[r][c] = 'sand';
+            }
+            // Expand frontier one more tile inward for next depth pass
+            if (depth < sandDepth - 1) {
+                for (const [dr,dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+                    const nr = r+dr, nc = c+dc;
+                    if (nr>0&&nr<rows-1&&nc>0&&nc<cols-1&&terrainMap[nr][nc]!=='water'&&terrainMap[nr][nc]!=='sand'&&terrainMap[nr][nc]!=='lava')
+                        next.add(nr*10000+nc);
+                }
+            }
+        }
+        frontier = next;
+    }
 }
 
-// ─── MAP VARIANT: CANYON — jagged diagonal chasm with bridges ───
+// ─── MAP VARIANT: CANYON — chasm down the middle with slight diagonal + wood bridges ───
 function applyCanyonVariant() {
     const cols = Math.ceil(WORLD_W / TILE), rows = Math.ceil(WORLD_H / TILE);
     const halfW = 4; // canyon half-width in tiles
-    // Two bridge spans: one at ~35%, one at ~65% across
+    // Two wood bridge spans
     const bridge1Lo = Math.floor(cols * 0.33), bridge1Hi = Math.floor(cols * 0.38);
     const bridge2Lo = Math.floor(cols * 0.62), bridge2Hi = Math.floor(cols * 0.67);
+    const bridgeCols = new Set();
+    for (let c = bridge1Lo; c <= bridge1Hi; c++) bridgeCols.add(c);
+    for (let c = bridge2Lo; c <= bridge2Hi; c++) bridgeCols.add(c);
+    // Record centerR per column so we can place bridges at the right rows
+    const centerRAt = {};
     for (let c = 0; c < cols; c++) {
-        if (c >= bridge1Lo && c <= bridge1Hi) continue;
-        if (c >= bridge2Lo && c <= bridge2Hi) continue;
-        // Canyon center row snakes diagonally with noise
-        const diagRow = Math.round((c / (cols - 1)) * (rows - 1));
-        const noise = Math.round(Math.sin(c * 0.09) * 10 + Math.sin(c * 0.03) * 8);
-        const centerR = Math.max(halfW + 2, Math.min(rows - halfW - 3, diagRow + noise));
+        if (bridgeCols.has(c)) continue;
+        // Centered with a gentle 20% diagonal (not corner-to-corner) + sine noise
+        const slope = Math.round((c / (cols - 1) - 0.5) * rows * 0.20);
+        const noise = Math.round(Math.sin(c * 0.09) * 8 + Math.sin(c * 0.03) * 5);
+        const cR = Math.max(halfW + 2, Math.min(rows - halfW - 3, Math.floor(rows / 2) + slope + noise));
+        centerRAt[c] = cR;
         for (let dr = -halfW; dr <= halfW; dr++) {
-            const r = centerR + dr;
-            if (r >= 0 && r < rows) terrainMap[r][c] = 'water';
+            const r = cR + dr;
+            if (r >= 0 && r < rows) terrainMap[r][c] = 'void';
         }
     }
     // Stone border along canyon edges
     for (let r = 1; r < rows - 1; r++) {
         for (let c = 1; c < cols - 1; c++) {
-            if (terrainMap[r][c] !== 'water') {
+            if (terrainMap[r][c] !== 'void') {
                 const adj = [[r-1,c],[r+1,c],[r,c-1],[r,c+1]];
-                if (adj.some(([ar,ac]) => terrainMap[ar]?.[ac] === 'water') && terrainMap[r][c] !== 'lava') {
+                if (adj.some(([ar,ac]) => terrainMap[ar]?.[ac] === 'void') && terrainMap[r][c] !== 'lava') {
                     terrainMap[r][c] = 'stone';
                 }
+            }
+        }
+    }
+    // Mark bridge tiles as wooden planks using neighboring centerR
+    for (const bc of bridgeCols) {
+        const nearL = centerRAt[bc - 1], nearR = centerRAt[bc + 1];
+        const bCenterR = nearL !== undefined ? nearL : nearR !== undefined ? nearR : Math.floor(rows / 2);
+        for (let dr = -halfW; dr <= halfW; dr++) {
+            const r = bCenterR + dr;
+            if (r >= 0 && r < rows && terrainMap[r][bc] !== 'void' && terrainMap[r][bc] !== 'stone' && terrainMap[r][bc] !== 'lava') {
+                terrainMap[r][bc] = 'bridge';
             }
         }
     }

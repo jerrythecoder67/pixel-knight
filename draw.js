@@ -799,6 +799,50 @@ function draw() {
             continue;
         }
 
+        if (t === 'sand') {
+            // Beach sand: warm beige (not too yellow)
+            ctx.fillStyle = '#c8aa7a';
+            ctx.fillRect(sx, sy, TILE, TILE);
+            ctx.fillStyle = '#d4b888';
+            ctx.fillRect(sx + 2, sy + 2, TILE - 4, TILE - 4);
+            // Sand grain dots
+            if ((r * 3 + c * 7) % 4 === 0) {
+                ctx.fillStyle = 'rgba(120,85,40,0.3)';
+                ctx.fillRect(sx + (c * 7) % 22 + 2, sy + (r * 5) % 22 + 2, 3, 2);
+                ctx.fillRect(sx + (c * 11) % 18 + 4, sy + (r * 9) % 18 + 6, 2, 2);
+            }
+            continue;
+        }
+
+        if (t === 'bridge') {
+            // Wooden bridge planks spanning the canyon
+            ctx.fillStyle = '#4a2e10'; ctx.fillRect(sx, sy, TILE, TILE); // dark base
+            ctx.fillStyle = '#7b4e20'; ctx.fillRect(sx, sy + 1, TILE, 6); // plank 1
+            ctx.fillStyle = '#8c5c28'; ctx.fillRect(sx, sy + 8, TILE, 6); // plank 2
+            ctx.fillStyle = '#7b4e20'; ctx.fillRect(sx, sy + 15, TILE, 6); // plank 3
+            ctx.fillStyle = '#8c5c28'; ctx.fillRect(sx, sy + 22, TILE, 5); // plank 4
+            ctx.fillStyle = '#3a2008'; // gap lines between planks
+            ctx.fillRect(sx, sy + 7, TILE, 1); ctx.fillRect(sx, sy + 14, TILE, 1); ctx.fillRect(sx, sy + 21, TILE, 1);
+            ctx.fillStyle = 'rgba(0,0,0,0.25)'; // side shadow (rope/rail suggestion)
+            ctx.fillRect(sx, sy, 2, TILE); ctx.fillRect(sx + TILE - 2, sy, 2, TILE);
+            continue;
+        }
+
+        if (t === 'void') {
+            // Canyon pit: deep dark abyss with subtle edge depth
+            ctx.fillStyle = '#06060a';
+            ctx.fillRect(sx, sy, TILE, TILE);
+            // Inner shadow for depth
+            ctx.fillStyle = 'rgba(0,0,0,0.85)';
+            ctx.fillRect(sx + 3, sy + 3, TILE - 6, TILE - 6);
+            // Faint purple shimmer in the depths
+            if ((r * 5 + c * 7) % 9 === 0) {
+                ctx.fillStyle = 'rgba(30,10,45,0.4)';
+                ctx.fillRect(sx + 6, sy + 8, 8, 4);
+            }
+            continue;
+        }
+
         ctx.fillStyle = state.alienWorld ? '#2a1845' : '#2d5a1e'; ctx.fillRect(sx, sy, TILE, TILE);
     }
 
@@ -930,10 +974,31 @@ function draw() {
         ctx.beginPath(); ctx.arc(sw.x - cx, sw.y - cy, sw.radius, 0, Math.PI * 2); ctx.stroke();
     });
 
-    // Lightning
+    // Lightning bolts (from sky to strike point)
     state.lightningEffects.forEach(l => {
-        ctx.fillStyle = `rgba(150,180,255,${l.life / 15})`;
-        for (let i = 0; i < 3; i++) { ctx.fillRect(l.x - cx + (Math.random() - 0.5) * 30, l.y - cy - Math.random() * 40, 3, 12 + Math.random() * 20); }
+        const lx = l.x - cx, ly = l.y - cy;
+        const alpha = l.life / 22;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        // Main bolt: jagged line from top of screen to strike point
+        ctx.strokeStyle = '#ffffee'; ctx.lineWidth = 3;
+        ctx.beginPath();
+        let bx = lx, by = -20;
+        ctx.moveTo(bx, by);
+        const steps = 6;
+        for (let si = 1; si <= steps; si++) {
+            bx = lx + (Math.random() - 0.5) * 30 * (1 - si / steps);
+            by = -20 + (ly + 20) * (si / steps);
+            ctx.lineTo(bx, by);
+        }
+        ctx.stroke();
+        // Glow
+        ctx.strokeStyle = 'rgba(180,200,255,0.4)'; ctx.lineWidth = 8;
+        ctx.stroke();
+        // Impact burst
+        ctx.fillStyle = `rgba(255,255,200,${alpha * 0.8})`;
+        ctx.beginPath(); ctx.arc(lx, ly, 20 * alpha, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
     });
 
     // Particles
@@ -1587,6 +1652,7 @@ function draw() {
 
     // Player
     drawPlayer();
+    drawRemotePlayers();
 
     // HP bar — always shown under player (vampire survivors style), always red
     {
@@ -2039,10 +2105,29 @@ function draw() {
         const _wdr = state.weather;
         const _wds = _wdr.extreme || (_wdr.stage > 0 ? WEATHER_STAGES[_wdr.stage] : null);
         if (_wds && _wds.fogAlpha > 0) {
-            // Fog overlay
+            // Subtle base fog overlay (very slight)
             ctx.save();
-            ctx.fillStyle = _wdr.extreme?.name === 'Blizzard' ? `rgba(200,220,255,${_wds.fogAlpha})` : `rgba(80,90,100,${_wds.fogAlpha})`;
+            const _baseFogA = _wds.fogAlpha * 0.35; // reduce to 35% so base is barely noticeable
+            ctx.fillStyle = _wdr.extreme?.name === 'Blizzard' ? `rgba(200,220,255,${_baseFogA})` : `rgba(80,90,100,${_baseFogA})`;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.restore();
+        }
+        // Local fog patches (world-space circles that obscure vision)
+        if (_wdr.fogPatches && _wdr.fogPatches.length > 0 && _wdr.stage >= 2) {
+            const _stormMult = _wdr.stage === 3 ? 1.0 : 0.7; // denser in stage 3
+            ctx.save();
+            for (const fp of _wdr.fogPatches) {
+                const fpx = fp.x - cx, fpy = fp.y - cy;
+                if (fpx < -fp.r - 50 || fpx > canvas.width + fp.r + 50) continue;
+                if (fpy < -fp.r - 50 || fpy > canvas.height + fp.r + 50) continue;
+                const fg = ctx.createRadialGradient(fpx, fpy, fp.r * 0.2, fpx, fpy, fp.r);
+                const _a = 0.55 * _stormMult;
+                fg.addColorStop(0, `rgba(80,90,100,${_a})`);
+                fg.addColorStop(0.6, `rgba(80,90,100,${_a * 0.6})`);
+                fg.addColorStop(1, 'rgba(80,90,100,0)');
+                ctx.fillStyle = fg;
+                ctx.beginPath(); ctx.arc(fpx, fpy, fp.r, 0, Math.PI * 2); ctx.fill();
+            }
             ctx.restore();
         }
         // Rain streaks (screen-space)
