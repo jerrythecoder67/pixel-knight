@@ -15,7 +15,8 @@ function buildWaveQueue(isHorde) {
     const p = state.player;
     const wave = p.wave;
     const spawnMult = state.diffMult.spawnMult || 1;
-    const count = Math.round((isHorde ? Math.min(50, 20 + wave) : Math.min(40, 5 + (wave - 1) * 3)) * spawnMult);
+    const mpMult = (typeof MP !== 'undefined' && MP.active && MP.isHost) ? 2 : 1;
+    const count = Math.round((isHorde ? Math.min(50 * mpMult, (20 + wave) * mpMult) : Math.min(40 * mpMult, (5 + (wave - 1) * 3) * mpMult)) * spawnMult);
     state.waveEnemiesTotal = count;
     state.waveEnemiesKilled = 0;
     const prefix = isHorde ? 'horde:' : '';
@@ -52,9 +53,16 @@ function spawnWaveEnemy(typeEntry) {
     const typeName = isHorde ? typeEntry.slice(6) : typeEntry;
     const tmpl = ENEMY_TYPES.find(t => t.type === typeName) || HUMAN_ENEMY_TYPES.find(t => t.type === typeName) || SAILOR_ENEMY_TYPES.find(t => t.type === typeName) || ALIEN_ENEMY_TYPES.find(t => t.type === typeName) || DINO_ENEMY_TYPES.find(t => t.type === typeName);
     if (!tmpl) return;
+    // In MP, spawn near a random alive player to distribute pressure
+    let _spawnOx = state.player.x, _spawnOy = state.player.y;
+    if (typeof MP !== 'undefined' && MP.active && MP.isHost && MP.guestPlayers.length > 0) {
+        const _alive = [{ x: state.player.x, y: state.player.y }, ...MP.guestPlayers.filter(g => g.isAlive)];
+        const _pick = _alive[Math.floor(Math.random() * _alive.length)];
+        _spawnOx = _pick.x; _spawnOy = _pick.y;
+    }
     const ang = Math.random() * Math.PI * 2, dist = 450 + Math.random() * 100;
-    const x = state.player.x + Math.cos(ang) * dist;
-    const y = state.player.y + Math.sin(ang) * dist;
+    const x = _spawnOx + Math.cos(ang) * dist;
+    const y = _spawnOy + Math.sin(ang) * dist;
     if (x < 0 || x > WORLD_W || y < 0 || y > WORLD_H) {
         state.waveSpawnQueue.unshift(typeEntry); return; // retry next frame
     }
@@ -86,6 +94,12 @@ function spawnWaveEnemy(typeEntry) {
         mod: null, shield: 0, maxShield: 0, _hpLastFrame: 0, isEnraged: false,
         isWaveEnemy: true
     };
+    // MP: alternate targeting between host (0) and guests (1, 2, 3...)
+    e.mpTargetIdx = 0;
+    if (typeof MP !== 'undefined' && MP.active && MP.isHost && MP.guestPlayers.length > 0 && !e.isBoss) {
+        MP._spawnIdx = (MP._spawnIdx || 0) + 1;
+        e.mpTargetIdx = MP._spawnIdx % (1 + MP.guestPlayers.length); // 0=host, 1..n=guests
+    }
     state.enemies.push(e);
     if (isElite && Math.random() < 0.10) {
         e.mod = ['shielded','enraged','splitting','vampiric'][Math.floor(Math.random() * 4)];
@@ -96,10 +110,17 @@ function spawnWaveEnemy(typeEntry) {
 }
 
 function spawnEnemy() {
-    const max = 6 + state.player.wave * 3 + (state.dayNight.phase === 'night' ? 3 : 0);
+    const _mpSpawnMult = (typeof MP !== 'undefined' && MP.active && MP.isHost) ? 2 : 1;
+    const max = (6 + state.player.wave * 3 + (state.dayNight.phase === 'night' ? 3 : 0)) * _mpSpawnMult;
     if (state.enemies.length >= max || state.bossActive || state.waveBreather > 0 || state.hordeWave) return;
+    let _ambOx = state.player.x, _ambOy = state.player.y;
+    if (typeof MP !== 'undefined' && MP.active && MP.isHost && MP.guestPlayers.length > 0) {
+        const _alive = [{ x: state.player.x, y: state.player.y }, ...MP.guestPlayers.filter(g => g.isAlive)];
+        const _pick = _alive[Math.floor(Math.random() * _alive.length)];
+        _ambOx = _pick.x; _ambOy = _pick.y;
+    }
     const ang = Math.random() * Math.PI * 2, dist = 450 + Math.random() * 100;
-    const x = state.player.x + Math.cos(ang) * dist, y = state.player.y + Math.sin(ang) * dist;
+    const x = _ambOx + Math.cos(ang) * dist, y = _ambOy + Math.sin(ang) * dist;
     if (x < 0 || x > WORLD_W || y < 0 || y > WORLD_H) return;
 
     // Sailor world: spawn sailor enemy types on water tiles only

@@ -20,10 +20,18 @@ function updateEnemies() {
 
         if (e.charmed) { e.charmTimer--; if (e.charmTimer <= 0) e.charmed = false; }
 
-        const edx = p.x - e.x, edy = p.y - e.y, dist = Math.hypot(edx, edy);
+        // Host-relative distance (always used for damage/boss specials)
+        const hostEdx = p.x - e.x, hostEdy = p.y - e.y, hostDist = Math.hypot(hostEdx, hostEdy);
+        // MP: non-boss enemies may target a guest player for movement
+        let edx = hostEdx, edy = hostEdy, dist = hostDist;
+        if (typeof MP !== 'undefined' && MP.active && MP.isHost && e.mpTargetIdx > 0 && !e.isBoss && !e.isShadowDemon) {
+            const gpIdx = (e.mpTargetIdx - 1) % Math.max(1, MP.guestPlayers.length);
+            const gpt = MP.guestPlayers[gpIdx];
+            if (gpt && gpt.isAlive) { edx = gpt.x - e.x; edy = gpt.y - e.y; dist = Math.hypot(edx, edy) || 1; }
+        }
         const pContactDist = 20 * (p.sizeScale || 1);
         // Ninja invisibility: enemies slow to a wander when player is invisible
-        if (p.ninjaInvisible && dist > 40) { e.x += (Math.random()-0.5)*0.5; e.y += (Math.random()-0.5)*0.5; continue; }
+        if (p.ninjaInvisible && hostDist > 40) { e.x += (Math.random()-0.5)*0.5; e.y += (Math.random()-0.5)*0.5; continue; }
         // Underwater: land enemies can't reach the diver
         if (state.underwater && !e.underwaterCapable) { e.x += (Math.random()-0.5)*0.8; e.y += (Math.random()-0.5)*0.8; continue; }
         let spd = e.speed;
@@ -278,6 +286,21 @@ function updateEnemies() {
 
             // ─── BOSS SPECIAL MOVES (boss-only, never applied to normal enemies) ───
             if (e.isBoss) {
+                // MP: boss switches target randomly every ~180 frames
+                if (typeof MP !== 'undefined' && MP.active && MP.isHost && MP.guestPlayers.length > 0) {
+                    if (!e._bossTargetTimer) e._bossTargetTimer = 120 + Math.floor(Math.random() * 120);
+                    e._bossTargetTimer--;
+                    if (e._bossTargetTimer <= 0) {
+                        e._bossTargetTimer = 120 + Math.floor(Math.random() * 120);
+                        e.mpTargetIdx = Math.floor(Math.random() * (1 + MP.guestPlayers.length));
+                    }
+                    const _bossGpIdx = e.mpTargetIdx > 0 ? (e.mpTargetIdx - 1) % Math.max(1, MP.guestPlayers.length) : -1;
+                    const _bossTarget = _bossGpIdx >= 0 ? MP.guestPlayers[_bossGpIdx] : null;
+                    if (_bossTarget && _bossTarget.isAlive) {
+                        edx = _bossTarget.x - e.x; edy = _bossTarget.y - e.y;
+                        dist = Math.hypot(edx, edy) || 1;
+                    }
+                }
                 // ── TROLL: Ground pound ring ──
                 if (e.type === 'troll') {
                     if (!e.groundPoundTimer) e.groundPoundTimer = 240 + Math.floor(Math.random() * 120);
@@ -641,7 +664,9 @@ function updateEnemies() {
                 }
             }
 
-            if (dist < pContactDist && !(p.rabbitInvTimer > 0)) {
+            // Shielded: paused host in MP (in shop etc.) is immune
+            const _hostShielded = typeof MP !== 'undefined' && MP.hostShielded;
+            if (hostDist < pContactDist && !(p.rabbitInvTimer > 0) && !_hostShielded) {
                 let dmg = (e.isBoss ? 1.5 : 0.5) * state.diffMult.enemyDmgMult * nightMult();
                 if (hasUpgrade('fortress')) dmg *= (0.6 - upgradeLevel('fortress') * 0.1);
                 // Turtle shell absorption (Iron Shell, branch 1)

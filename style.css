@@ -852,7 +852,61 @@ button:active {
     transition: border-color 0.15s, color 0.15s; margin-top: 4px;
 }
 #mp-open-btn:hover { border-color: #66bb6a; color: #66bb6a; }
-#mp-overlay { pointer-events: auto; }
+
+/* MP overlays — match the difficulty/pet select panel style */
+#mp-confirm-overlay, #mp-choice-overlay, #mp-join-overlay, #mp-lobby-overlay, #mp-guest-overlay {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--ui-bg);
+    border: 4px solid #2e7d32;
+    padding: 32px 40px;
+    text-align: center;
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    min-width: 400px;
+    z-index: 30;
+    animation: popIn 0.3s ease-out;
+    color: var(--text-color);
+}
+#mp-confirm-overlay h2, #mp-choice-overlay h2, #mp-join-overlay h2,
+#mp-lobby-overlay h2, #mp-guest-overlay h2 {
+    color: #4caf50; font-size: 18px; text-shadow: 3px 3px 0 #000; letter-spacing: 2px;
+}
+#mp-confirm-overlay.hidden, #mp-choice-overlay.hidden, #mp-join-overlay.hidden,
+#mp-lobby-overlay.hidden, #mp-guest-overlay.hidden, #mp-hostleft-overlay.hidden,
+#mp-spectate-overlay.hidden, #mp-overlay.hidden { display: none; }
+#mp-spectate-overlay { position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.82); border: 3px solid #c62828; padding: 18px 28px; text-align: center; pointer-events: auto; display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 260px; z-index: 50; border-radius: 8px; animation: popIn 0.3s ease-out; color: var(--text-color); }
+#mp-spectate-overlay h2 { color: #ef5350; font-size: 16px; text-shadow: 2px 2px 0 #000; letter-spacing: 2px; margin: 0; }
+#mp-respawn-offer { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+#mp-respawn-offer.hidden { display: none; }
+#mp-hostleft-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); background: var(--ui-bg); border: 4px solid #c62828; padding: 32px 40px; text-align: center; pointer-events: auto; display: flex; flex-direction: column; align-items: center; gap: 14px; min-width: 360px; z-index: 50; animation: popIn 0.3s ease-out; color: var(--text-color); }
+#mp-hostleft-overlay h2 { color: #ef5350; font-size: 18px; text-shadow: 3px 3px 0 #000; letter-spacing: 2px; }
+#mp-hostleft-choices { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+#mp-hostleft-choices .diff-btn { width: 100%; }
+#mp-confirm-choices { display: flex; flex-direction: row; gap: 14px; justify-content: center; }
+#mp-confirm-choices .diff-btn { width: 100px; }
+#mp-choice-buttons { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+#mp-choice-buttons .diff-btn { width: 100%; }
+
+/* Lobby player slots */
+.mp-slot-wrap { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.mp-slot-box {
+    width: 94px; height: 104px;
+    border: 2px solid #444; border-radius: 8px;
+    background: rgba(0,0,0,0.4);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; position: relative;
+}
+.mp-slot-box.occupied { border-color: #4caf50; }
+.mp-slot-box.you { border-color: #ffd700; }
+.mp-slot-box.empty { color: #444; font-size: 28px; }
+.mp-slot-canvas { display: block; }
+.mp-slot-name { font-size: 11px; font-family: monospace; color: #fff; font-weight: bold; max-width: 94px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mp-slot-label { font-size: 9px; font-family: monospace; color: #aaa; letter-spacing: 1px; }
 
 /* Leaderboard overlay */
 #leaderboard-overlay {

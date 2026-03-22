@@ -88,25 +88,17 @@ function selectPet(key) {
         }
     }
     // Map variant selection (before spawnTrees so water tiles filter correctly)
-    // In multiplayer, host picks the variant via lobby; _forcedMapVariant overrides the random roll
-    {
-        const forced = (typeof MP !== 'undefined') ? MP._forcedMapVariant : null;
-        if (forced) {
-            state.mapVariant = forced;
-            if (forced === 'island') applyIslandVariant();
-            else if (forced === 'canyon') applyCanyonVariant();
-            else if (forced === 'cave') applyCaveVariant();
-            MP._forcedMapVariant = null;
-        } else {
+    // In MP host mode: skip random roll — host applies the variant in mpStartGame() after lobby.
+    // In MP guest mode: variant is applied in mpGuestStartGame().
+    if (typeof MP === 'undefined' || !state.mpMode) {
         const vRoll = Math.random();
         if (vRoll < 0.50)       { state.mapVariant = 'normal'; }
         else if (vRoll < 0.667) { state.mapVariant = 'island';  applyIslandVariant(); }
         else if (vRoll < 0.833) { state.mapVariant = 'canyon';  applyCanyonVariant(); }
         else                    { state.mapVariant = 'cave';    applyCaveVariant(); }
-        }
         if (state.mapVariant === 'cave') {
-            state.dayNight.phase = 'day'; // no night cycle
-            state.dayNight.alpha = 0.45; // fixed dim atmosphere
+            state.dayNight.phase = 'day';
+            state.dayNight.alpha = 0.45;
             state.dayNight.timer = 999999999;
             state.dayNight.eveningShown = true;
             showNotif('The cave is silent. Only stone and fire remain.');
@@ -120,6 +112,8 @@ function selectPet(key) {
     // Build wave queue AFTER all world flags are set (alien/sailor world affects enemy types)
     state.waveSpawnQueue = buildWaveQueue(false);
     showNotif(PET_TYPES[key].icon + ' ' + PET_TYPES[key].name + ' joined you!');
+    // Multiplayer: pause and show create/join choice instead of starting immediately
+    if (state.mpMode) { mpShowChoice(); return; }
 }
 
 function selectDifficulty(key) {

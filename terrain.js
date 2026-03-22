@@ -322,33 +322,63 @@ function applyIslandVariant() {
             }
         }
     }
-    // Sand beach: expand 1-3 tiles inward from island border water only
-    const sandDepth = 1 + Math.floor(Math.random() * 3); // 1-3 tile beach width
+    // Sand beach: variable depth per column via Markov chain (1→1|2, 2→1|2|3, 3→2|3)
+    const colDepths = [];
+    let _d = 1 + Math.floor(Math.random() * 3);
+    for (let c = 0; c < cols; c++) {
+        colDepths[c] = _d;
+        const _r = Math.random();
+        if (_d === 3)      _d = _r < 0.5 ? 3 : 2;
+        else if (_d === 2) _d = _r < 0.33 ? 1 : _r < 0.67 ? 2 : 3;
+        else               _d = _r < 0.5 ? 1 : 2;
+    }
+
+    // Build initial frontier: land tiles adjacent to island ocean water OR adjacent to
+    // pre-existing lake tiles that border the island ocean (fixes lake-on-shore showing stone)
     let frontier = new Set();
     for (let r = 1; r < rows - 1; r++) {
         for (let c = 1; c < cols - 1; c++) {
             if (terrainMap[r][c] === 'water') continue;
             const adj4 = [[r-1,c],[r+1,c],[r,c-1],[r,c+1]];
-            if (adj4.some(([ar,ac]) => islandWater.has(ar*10000+ac))) frontier.add(r*10000+c);
+            const touchesShore = adj4.some(([ar,ac]) => {
+                if (islandWater.has(ar*10000+ac)) return true;
+                // Also include tiles adjacent to pre-existing lakes that touch the island shore
+                if (terrainMap[ar]?.[ac] === 'water' && !islandWater.has(ar*10000+ac)) {
+                    return [[ar-1,ac],[ar+1,ac],[ar,ac-1],[ar,ac+1]].some(([lr,lc]) => islandWater.has(lr*10000+lc));
+                }
+                return false;
+            });
+            if (touchesShore) frontier.add(r*10000+c);
         }
     }
-    for (let depth = 0; depth < sandDepth; depth++) {
+
+    // Track which tiles have been assigned sand (with their depth layer)
+    const sandAssigned = new Set();
+    for (const key of frontier) sandAssigned.add(key);
+
+    // Expand up to 3 layers; each column only expands as far as colDepths[c] allows
+    let currentFrontier = new Set(frontier);
+    for (let depth = 0; depth < 2; depth++) { // max 2 more expansion passes (total 3 layers)
         const next = new Set();
-        for (const key of frontier) {
+        for (const key of currentFrontier) {
             const r = Math.floor(key / 10000), c = key % 10000;
-            if (terrainMap[r][c] !== 'lava' && terrainMap[r][c] !== 'water') {
-                terrainMap[r][c] = 'sand';
-            }
-            // Expand frontier one more tile inward for next depth pass
-            if (depth < sandDepth - 1) {
+            if (colDepths[c] > depth + 1) {
                 for (const [dr,dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
-                    const nr = r+dr, nc = c+dc;
-                    if (nr>0&&nr<rows-1&&nc>0&&nc<cols-1&&terrainMap[nr][nc]!=='water'&&terrainMap[nr][nc]!=='sand'&&terrainMap[nr][nc]!=='lava')
-                        next.add(nr*10000+nc);
+                    const nr = r+dr, nc = c+dc, nk = nr*10000+nc;
+                    if (nr>0&&nr<rows-1&&nc>0&&nc<cols-1&&!sandAssigned.has(nk)&&terrainMap[nr][nc]!=='water'&&terrainMap[nr][nc]!=='lava') {
+                        sandAssigned.add(nk);
+                        next.add(nk);
+                    }
                 }
             }
         }
-        frontier = next;
+        currentFrontier = next;
+    }
+
+    // Apply sand to all assigned tiles
+    for (const key of sandAssigned) {
+        const r = Math.floor(key / 10000), c = key % 10000;
+        if (terrainMap[r][c] !== 'lava' && terrainMap[r][c] !== 'water') terrainMap[r][c] = 'sand';
     }
 }
 

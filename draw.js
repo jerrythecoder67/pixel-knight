@@ -1650,8 +1650,8 @@ function draw() {
         }
     }
 
-    // Player
-    drawPlayer();
+    // Player (skip when this guest is spectating — camera position is ghost-pinned to host)
+    if (typeof MP === 'undefined' || !MP._spectating) drawPlayer();
     drawRemotePlayers();
 
     // HP bar — always shown under player (vampire survivors style), always red

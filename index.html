@@ -202,7 +202,7 @@
                 </div>
                 <button id="lore-btn">LORE</button>
                 <button id="lb-btn">LEADERBOARD</button>
-                <button id="mp-open-btn" onclick="document.getElementById('mp-overlay').classList.remove('hidden');document.getElementById('difficulty-overlay').classList.add('hidden');">MULTIPLAYER</button>
+                <button id="mp-open-btn" onclick="document.getElementById('difficulty-overlay').classList.add('hidden');document.getElementById('mp-confirm-overlay').classList.remove('hidden');">MULTIPLAYER</button>
 
             </div>
 
@@ -214,58 +214,105 @@
                 <button id="lb-close-btn">CLOSE</button>
             </div>
 
-            <!-- Multiplayer Lobby -->
-            <div id="mp-overlay" class="hidden" style="position:absolute;inset:0;background:rgba(0,0,0,0.88);z-index:300;">
-                <div style="background:#111;border:2px solid #444;border-radius:12px;padding:32px 40px;min-width:340px;text-align:center;font-family:monospace;color:#fff;">
-                    <!-- Main menu -->
-                    <div id="mp-main-menu">
-                        <h2 style="letter-spacing:4px;margin-bottom:4px">MULTIPLAYER</h2>
-                        <p style="color:#888;font-size:12px;margin-bottom:20px">Up to 4 players • Shared world • WebRTC P2P</p>
-                        <p style="color:#aaa;font-size:12px;margin-bottom:12px">Use your currently selected character &amp; pet</p>
-                        <button class="diff-btn diff-normal" style="width:100%;margin-bottom:10px" onclick="mpHostGame()">HOST GAME</button>
-                        <div style="display:flex;gap:8px;margin-bottom:10px">
-                            <input id="mp-code-input" maxlength="6" placeholder="Room code" style="flex:1;padding:10px;font-size:18px;font-family:monospace;text-transform:uppercase;background:#1a1a2e;color:#fff;border:2px solid #444;border-radius:6px;text-align:center">
-                            <button class="diff-btn diff-easy" onclick="mpJoinGame(document.getElementById('mp-code-input').value)">JOIN</button>
-                        </div>
-                        <button class="diff-btn" style="width:100%;background:#2a2a2a" onclick="document.getElementById('mp-overlay').classList.add('hidden');document.getElementById('difficulty-overlay').classList.remove('hidden')">BACK</button>
-                        <div id="mp-status" style="margin-top:12px;color:#f44;font-size:12px;min-height:16px"></div>
+
+            <!-- MP Step 1: Confirmation -->
+            <div id="mp-confirm-overlay" class="hidden">
+                <h2>MULTIPLAYER</h2>
+                <p class="upgrade-subtitle">Play with up to 4 friends?</p>
+                <div id="mp-confirm-choices">
+                    <button class="diff-btn diff-normal" onclick="mpConfirmYes()">YES</button>
+                    <button class="diff-btn" style="border-color:#555;color:#888" onclick="mpConfirmNo()">NO</button>
+                </div>
+            </div>
+
+            <!-- MP Step 2: Create or Join (shown after pet select) -->
+            <div id="mp-choice-overlay" class="hidden">
+                <h2>MULTIPLAYER</h2>
+                <p class="upgrade-subtitle">How do you want to play?</p>
+                <div style="margin:10px 0 16px">
+                    <label style="color:#aaa;font-size:10px;letter-spacing:1px">YOUR NAME</label><br>
+                    <input id="mp-name-input" maxlength="12" placeholder="Enter name..." style="margin-top:6px;padding:7px 14px;font-size:14px;font-family:monospace;background:rgba(0,0,0,0.4);color:#fff;border:2px solid #555;border-radius:5px;text-align:center;width:170px">
+                </div>
+                <div id="mp-choice-buttons">
+                    <button class="diff-btn diff-normal" onclick="mpGoCreate()">CREATE GAME</button>
+                    <button class="diff-btn diff-easy" onclick="mpGoJoin()">JOIN GAME</button>
+                </div>
+                <button class="diff-btn" style="border-color:#555;color:#888;margin-top:8px" onclick="mpChoiceBack()">BACK</button>
+            </div>
+
+            <!-- MP Step 3a: Join screen -->
+            <div id="mp-join-overlay" class="hidden">
+                <h2>JOIN GAME</h2>
+                <p class="upgrade-subtitle">Enter the room code from the host</p>
+                <div style="margin:16px 0">
+                    <input id="mp-code-input" maxlength="6" placeholder="XXXXXX" style="padding:10px 18px;font-size:28px;font-family:monospace;letter-spacing:10px;text-transform:uppercase;background:rgba(0,0,0,0.4);color:#ffd700;border:2px solid #555;border-radius:6px;text-align:center;width:220px">
+                </div>
+                <button class="diff-btn diff-normal" onclick="mpConnectToHost()">CONNECT</button>
+                <div id="mp-join-status" style="margin:8px 0;color:#aaa;font-size:11px;min-height:14px"></div>
+                <button class="diff-btn" style="border-color:#555;color:#888;margin-top:4px" onclick="mpJoinBack()">BACK</button>
+            </div>
+
+            <!-- MP Step 3b: Host lobby -->
+            <div id="mp-lobby-overlay" class="hidden">
+                <h2>LOBBY</h2>
+                <div style="margin-bottom:14px">
+                    <div style="color:#888;font-size:9px;letter-spacing:2px;margin-bottom:4px">ROOM CODE — share with friends</div>
+                    <div id="mp-code-display" style="font-size:32px;font-weight:bold;color:#ffd700;letter-spacing:12px;font-family:monospace">------</div>
+                </div>
+                <!-- 4 player slots — canvas previews with name+label outside box -->
+                <div id="mp-slots-row" style="display:flex;gap:18px;justify-content:center;align-items:flex-start;margin-bottom:18px">
+                    <div class="mp-slot-wrap" id="mp-slot-0"><div class="mp-slot-box"><canvas class="mp-slot-canvas" width="90" height="100"></canvas></div><div class="mp-slot-name"></div><div class="mp-slot-label"></div></div>
+                    <div class="mp-slot-wrap" id="mp-slot-1"><div class="mp-slot-box"><canvas class="mp-slot-canvas" width="90" height="100"></canvas></div><div class="mp-slot-name"></div><div class="mp-slot-label"></div></div>
+                    <div class="mp-slot-wrap" id="mp-slot-2"><div class="mp-slot-box"><canvas class="mp-slot-canvas" width="90" height="100"></canvas></div><div class="mp-slot-name"></div><div class="mp-slot-label"></div></div>
+                    <div class="mp-slot-wrap" id="mp-slot-3"><div class="mp-slot-box"><canvas class="mp-slot-canvas" width="90" height="100"></canvas></div><div class="mp-slot-name"></div><div class="mp-slot-label"></div></div>
+                </div>
+                <!-- Settings -->
+                <div style="display:flex;gap:18px;justify-content:center;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+                    <label style="color:#ccc;font-size:11px;display:flex;gap:6px;align-items:center;cursor:pointer">
+                        <input type="checkbox" id="mp-ff-toggle"> Friendly Fire (PvP)
+                    </label>
+                    <div style="display:flex;gap:6px;align-items:center">
+                        <label style="color:#ccc;font-size:11px">Map:</label>
+                        <select id="mp-map-select" style="background:rgba(0,0,0,0.5);color:#fff;border:1px solid #555;padding:4px 8px;border-radius:4px;font-family:monospace;font-size:11px">
+                            <option value="normal">Normal</option>
+                            <option value="island">Island</option>
+                            <option value="canyon">Canyon</option>
+                            <option value="cave">Cave</option>
+                        </select>
                     </div>
-                    <!-- Lobby panel -->
-                    <div id="mp-lobby-panel" class="hidden">
-                        <h2 style="letter-spacing:4px;margin-bottom:8px">LOBBY</h2>
-                        <div id="mp-lobby-status" style="color:#aaa;font-size:12px;margin-bottom:12px">Connecting...</div>
-                        <!-- Room code display (host only) -->
-                        <div id="mp-room-display" class="hidden" style="background:#1a1a2e;padding:10px 20px;border-radius:8px;margin-bottom:14px">
-                            <div style="color:#888;font-size:10px;letter-spacing:2px">ROOM CODE — share this!</div>
-                            <div id="mp-code-display" style="font-size:34px;font-weight:bold;color:#ffd700;letter-spacing:10px;margin:4px 0">------</div>
-                        </div>
-                        <div id="mp-player-list" style="margin-bottom:14px;font-size:13px;text-align:left"></div>
-                        <!-- Host controls -->
-                        <div id="mp-host-controls" class="hidden" style="display:flex;flex-direction:column;gap:10px;align-items:stretch">
-                            <div style="display:flex;gap:10px;justify-content:center;align-items:center">
-                                <label style="color:#ccc;font-size:13px">Map:</label>
-                                <select id="mp-map-select" style="background:#1a1a2e;color:#fff;border:1px solid #555;padding:5px 8px;border-radius:4px;font-family:monospace">
-                                    <option value="normal">Normal</option>
-                                    <option value="island">Island</option>
-                                    <option value="canyon">Canyon</option>
-                                    <option value="cave">Cave</option>
-                                </select>
-                                <label style="color:#ccc;font-size:13px">Diff:</label>
-                                <select id="mp-diff-select" style="background:#1a1a2e;color:#fff;border:1px solid #555;padding:5px 8px;border-radius:4px;font-family:monospace">
-                                    <option value="easy">Easy</option>
-                                    <option value="normal" selected>Normal</option>
-                                    <option value="hard">Hard</option>
-                                </select>
-                            </div>
-                            <label style="color:#ccc;font-size:13px;display:flex;gap:8px;align-items:center;justify-content:center;cursor:pointer">
-                                <input type="checkbox" id="mp-ff-toggle"> Friendly Fire / PvP mode
-                            </label>
-                            <button id="mp-start-btn" class="diff-btn diff-normal" onclick="mpStartGame()" disabled>START GAME</button>
-                        </div>
-                        <!-- Guest waiting -->
-                        <div id="mp-join-waiting" class="hidden" style="color:#aaa;font-size:13px;padding:10px">Waiting for host to start the game...</div>
-                        <button class="diff-btn" style="width:100%;background:#2a2a2a;margin-top:12px" onclick="mpDisconnect()">LEAVE</button>
-                    </div>
+                </div>
+                <div style="display:flex;gap:10px;justify-content:center">
+                    <button id="mp-start-btn" class="diff-btn diff-normal" onclick="mpStartGame()" disabled>START GAME</button>
+                    <button class="diff-btn" style="border-color:#555;color:#888" onclick="mpLobbyBack()">BACK</button>
+                </div>
+            </div>
+
+            <!-- MP guest waiting screen -->
+            <div id="mp-guest-overlay" class="hidden">
+                <h2>LOBBY</h2>
+                <p class="upgrade-subtitle" id="mp-guest-status">Connected! Waiting for host...</p>
+                <div id="mp-guest-slots" style="display:flex;gap:18px;justify-content:center;align-items:flex-start;margin:16px 0"></div>
+                <button class="diff-btn" style="border-color:#555;color:#888;margin-top:8px" onclick="mpDisconnect()">LEAVE</button>
+            </div>
+
+
+            <!-- MP: Spectate overlay (guest died) -->
+            <div id="mp-spectate-overlay" class="hidden">
+                <h2>YOU DIED</h2>
+                <p id="mp-spectate-status" class="upgrade-subtitle">Spectating...</p>
+                <div id="mp-respawn-offer" class="hidden">
+                    <button class="diff-btn diff-normal" onclick="mpRequestRespawn()">RESPAWN (1 USE)</button>
+                </div>
+                <p style="font-size:10px;color:#888;margin-top:12px">Watch the action while you wait</p>
+            </div>
+
+            <!-- MP: Host disconnected -->
+            <div id="mp-hostleft-overlay" class="hidden">
+                <h2>HOST DISCONNECTED</h2>
+                <p class="upgrade-subtitle">The host has left the game.</p>
+                <div id="mp-hostleft-choices">
+                    <button class="diff-btn diff-normal" onclick="mpKeepPlayingSolo()">KEEP PLAYING SOLO</button>
+                    <button class="diff-btn" style="border-color:#555;color:#888" onclick="mpQuitToMenu()">QUIT TO MENU</button>
                 </div>
             </div>
 

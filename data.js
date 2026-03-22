@@ -4,7 +4,7 @@
  * Camera, weapons, shop, upgrades, bosses, evolution
  */
 const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+let ctx = canvas.getContext('2d');
 canvas.width = 800; canvas.height = 600;
 const TILE = 32, WORLD_W = 4800, WORLD_H = 3600;
 const DAY_LEN = 5100, NIGHT_LEN = 3000; // ~85s day, ~50s night at 60fps

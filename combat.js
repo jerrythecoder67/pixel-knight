@@ -2,6 +2,13 @@
 function playerAttack() {
     if (state.player.attackCooldown > 0) return;
     const wpnKey = state.player.weapon, wpn = ALL_WEAPONS[wpnKey];
+    // Guest: don't deal damage locally — host handles it via input packets
+    if (typeof MP !== 'undefined' && MP.active && !MP.isHost) {
+        state.player.attacking = true;
+        state.player.attackCooldown = Math.round(wpn.cooldown * (state.player.attackSpeedMult || 1));
+        state._mpAttacking = true;
+        return;
+    }
     state.player.attacking = true; state.player.attackCooldown = Math.round(wpn.cooldown * (state.player.attackSpeedMult || 1)); state.player.attackCount++;
     // Melee attacks aim toward the mouse cursor (so you can run and attack behind you)
     const _mx = state.mouse.x + state.camera.x, _my = state.mouse.y + state.camera.y;

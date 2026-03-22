@@ -1,5 +1,10 @@
 // ─── END GAME ───
 function endGame() {
+    // MP guest: enter spectate mode instead of full game over
+    if (typeof MP !== 'undefined' && MP.active && !MP.isHost) {
+        mpGuestEnterSpectate();
+        return;
+    }
     // Wizard trial: count as a fail if still active
     if (state.wizardTrialActive) {
         persist.wizardAttempts = (persist.wizardAttempts || 0) + 1;

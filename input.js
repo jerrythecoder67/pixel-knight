@@ -3,6 +3,10 @@
 let _devBuffer = null;
 
 window.addEventListener('keydown', e => {
+    // Never process game keys when the user is typing in an input field
+    const tag = document.activeElement && document.activeElement.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
     // Dev tool intercept
     if (e.key === '\\') { _devBuffer = ''; e.preventDefault(); return; }
     if (_devBuffer !== null) {
@@ -122,7 +126,11 @@ window.addEventListener('keydown', e => {
         }
     }
 });
-window.addEventListener('keyup', e => state.keys[e.key.toLowerCase()] = false);
+window.addEventListener('keyup', e => {
+    const tag = document.activeElement && document.activeElement.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    state.keys[e.key.toLowerCase()] = false;
+});
 window.addEventListener('mousemove', e => {
     const r = canvas.getBoundingClientRect();
     // Divide by CSS scale so mouse coords match logical canvas coords in fullscreen
