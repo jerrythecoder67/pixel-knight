@@ -455,8 +455,10 @@ function mpUpdateGuestPlayers() {
 
         if (!gp.isPaused) {
             state.enemies.forEach(e => {
-                if (gp.hurtTimer > 0 || !e.damage) return;
-                if (Math.hypot(e.x - gp.x, e.y - gp.y) < 24) { gp.hp -= e.damage; gp.hurtTimer = 40; }
+                if (gp.hurtTimer > 0) return;
+                // enemies don't carry a damage field in their template; fall back to a wave-scaled default
+                const eDmg = e.damage || Math.max(5, Math.round(8 + (state.player.wave || 1) * 1.5));
+                if (Math.hypot(e.x - gp.x, e.y - gp.y) < 24) { gp.hp -= eDmg; gp.hurtTimer = 40; }
             });
         }
 
@@ -592,8 +594,12 @@ function drawRemotePlayers() {
         persist.selectedSkin = rp.skin || 'default';
         persist.selectedCharacter = rp.character || 'knight';
         ctx.globalAlpha = rp.dashing ? 0.55 : 0.92;
-        drawPlayer();
+        try { drawPlayer(); } catch(e) {}
         ctx.globalAlpha = 1;
+        // Restore immediately so a thrown exception can't corrupt the next frame
+        state.player = _realPlayer;
+        persist.selectedSkin = _realSkin;
+        persist.selectedCharacter = _realChar;
 
         const sx = rp.x - state.camera.x, sy = rp.y - state.camera.y;
         ctx.fillStyle = '#fff';
@@ -607,17 +613,15 @@ function drawRemotePlayers() {
             ctx.fillStyle = '#4caf50'; ctx.fillRect(bx, by, bw * Math.max(0, rp.hp / rp.maxHp), bh);
         }
     }
-
-    state.player = _realPlayer;
-    persist.selectedSkin = _realSkin;
-    persist.selectedCharacter = _realChar;
     ctx.textAlign = 'left';
 }
 
 // ── Death / Spectate (guest-side) ────────────────────────────────────────────
 
 function mpGuestEnterSpectate() {
+    if (MP._spectating) return; // already spectating, avoid double-trigger
     MP._spectating = true;
+    state.gameOver = false; // prevent endGame() death screen from showing
     state.player.hp = 0;
     // Clear all keys so the dead player doesn't keep moving
     for (const k in state.keys) state.keys[k] = false;

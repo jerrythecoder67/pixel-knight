@@ -393,11 +393,13 @@ function updatePlayer() {
     }
     const magR = (hasUpgrade('magnetism') ? 200 + upgradeLevel('magnetism') * 50 : 60) + dogBonus;
     const goldPullSpeed = (p.pet === 'dog' && petBranchIs(1, 0, 0) && p.petEvolveLevel >= 5) ? 12 : 5;
+    // MP guests skip local gold pickup — host handles it in mpUpdateGuestPlayers() and broadcasts the shared pool
+    const _mpGuest = typeof MP !== 'undefined' && MP.active && !MP.isHost;
     for (let i = state.goldPickups.length - 1; i >= 0; i--) {
         const g = state.goldPickups[i]; g.life--;
         const d = Math.hypot(g.x - p.x, g.y - p.y);
         if (d < magR) { const pull = Math.min(goldPullSpeed, magR / d); g.x += (p.x - g.x) / d * pull; g.y += (p.y - g.y) / d * pull; }
-        if (d < 20) {
+        if (d < 20 && !_mpGuest) {
             // Janitor pickup tracking (50 pickups in 5s = 300 frames)
             if (p.charJanitor) {
                 state.janitorPickupWindow = state.janitorPickupWindow || [];

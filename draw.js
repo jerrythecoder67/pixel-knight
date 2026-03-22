@@ -4063,5 +4063,13 @@ function drawAttackEffect(p) {
     ctx.restore();
 }
 
-function loop() { update(); draw(); requestAnimationFrame(loop); }
+// Cap to ~60fps so high-refresh-rate monitors don't run the game faster
+let _loopLastTime = 0;
+function loop(ts) {
+    requestAnimationFrame(loop);
+    if (ts - _loopLastTime < 15.5) return; // skip if < ~16ms since last frame
+    _loopLastTime = ts;
+    update();
+    draw();
+}
 loop();

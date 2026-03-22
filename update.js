@@ -13,7 +13,8 @@ function update() {
 
     updateDayNight();
     updateCharacterEffects();
-    updatePlayer();
+    // Skip local player update when spectating (dead guest) — camera driven by host position in mpApplyState
+    if (typeof MP === 'undefined' || !MP._spectating) updatePlayer();
 
     if (!MP.active || MP.isHost) {
         // Host and single-player: run full simulation
