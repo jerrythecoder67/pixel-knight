@@ -51,7 +51,7 @@ const state = {
     camera: { x: 0, y: 0 },
     enemies: [], crocodiles: [], salamanders: [], fish: [], sharks: [], crabs: [], humanExplorers: [], alienExplorers: [], skeletonWarriors: [], trees: [], barricades: [], particles: [], projectiles: [], enemyProjectiles: [],
     butler: null, // Rich character's butler companion
-    goldPickups: [], heartPickups: [], fireTrails: [], shockwaves: [], lightningEffects: [], damageNumbers: [],
+    goldPickups: [], heartPickups: [], timeTokenPickups: [], fireTrails: [], shockwaves: [], lightningEffects: [], damageNumbers: [],
     spiderWebs: [], treasureChests: [], eggs: [],
     bountyTarget: null,
     keys: {}, mouse: { x: 0, y: 0 }, mouseHeld: false,
@@ -93,6 +93,21 @@ const state = {
     sailorWorld: false,
     stickWorld: false,
     mapVariant: 'normal', // 'normal' | 'island' | 'canyon' | 'cave'
+    // Quest system
+    currentQuest: null,  // { id, name, desc, type, target, progress, reward, failed }
+    questWaveCounter: 0, // how many waves since last quest
+    // Challenge zones (dungeon rooms)
+    challengeZone: null, // { x, y, r, wave, maxWaves, active, complete, enemiesLeft, spawnQueue }
+    // Dungeon portal + dungeon state (set by generateDungeon())
+    dungeonPortal: null, // { x, y, used }
+    dungeon: null,       // full dungeon state (see dungeon.js)
+    // Daily challenge
+    isDailyChallenge: false,
+    dailyParams: null,
+    _dailyEnemySpeedMult: 1, _dailyNoHeal: false, _dailyGoldMult: 1,
+    _dailyEnemyHpMult: 1, _dailyBossRush: false, _dailyNoDash: false,
+    _dailyEternalNight: false, _dailyGiantEnemies: false, _dailyPoison: false, _dailyFrenzy: false,
+    _questHitThisFrame: false,
     // Mid-run events
     activeEvent: null,     // { id, name, desc, timer, duration, remove }
     _eclipseActive: false, _bloodMoonActive: false, _earthquakeActive: false,

@@ -46,6 +46,12 @@ function playerAttack() {
     // Gamer: combo multiplier (kills build combo, caps at 20x = +80% dmg)
     if (state.player.charGamer && state.player.gamerCombo > 0)
         baseDmg *= 1 + Math.min(state.player.gamerCombo, 20) * 0.04;
+    // Gamer: AIMBOT — auto-crit
+    if (state.player.charGamer && state.player.gamerActiveCode === 'aimbot') isCrit = true;
+    // Gamer: BIGMODE — 2× damage
+    if (state.player.charGamer && state.player._gamerBigMode) baseDmg *= 2;
+    // Old Man: SUPER OLD MAN — 4× damage
+    if (state.player.charOldMan && state.player.superOldMan) baseDmg *= 4;
     // Shopper: +1% per 1000 gold currently held
     if (state.player.charShopper && state.player.gold > 0)
         baseDmg *= 1 + Math.floor(state.player.gold / 1000) * 0.01;
@@ -370,15 +376,33 @@ function playerAttack() {
             }
         });
     } else if (wpnKey === 'oldManCane') {
-        // Melee with 25% stun chance
-        state.enemies.forEach(e => {
-            if (Math.hypot(e.x - state.player.x, e.y - state.player.y) < wpn.range) {
-                e.hp -= baseDmg; e.hitFlash = 8;
-                if (Math.random() < 0.25 && !e.isBoss) { e.stunTimer = 120; e.stunned = true; }
-                createExplosion(e.x, e.y, '#9e9e9e');
-                state.damageNumbers.push({ x: e.x, y: e.y - 10, value: Math.round(baseDmg), life: 50, vy: -1.5, crit: isCrit });
-            }
-        });
+        const p2 = state.player;
+        if (p2.superOldMan) {
+            // SUPER OLD MAN: wide AoE, knockback, guaranteed stun, fire a magic bolt
+            const superRange = wpn.range * 3.5;
+            state.enemies.forEach(e => {
+                if (Math.hypot(e.x - p2.x, e.y - p2.y) < superRange) {
+                    e.hp -= baseDmg; e.hitFlash = 12;
+                    e.stunTimer = 180; e.stunned = true;
+                    const ang = Math.atan2(e.y - p2.y, e.x - p2.x);
+                    e.x += Math.cos(ang) * 50; e.y += Math.sin(ang) * 50;
+                    createExplosion(e.x, e.y, '#a78bfa');
+                    state.damageNumbers.push({ x: e.x, y: e.y - 10, value: Math.round(baseDmg), life: 50, vy: -1.5, crit: true });
+                }
+            });
+            // Fire a slow magic bolt in attack direction
+            state.projectiles.push({ x: p2.x, y: p2.y, vx: fx * 6, vy: fy * 6, damage: Math.round(baseDmg * 0.6), life: 70, type: 'magic', color: '#a78bfa' });
+        } else {
+            // Normal: Melee with 25% stun chance
+            state.enemies.forEach(e => {
+                if (Math.hypot(e.x - p2.x, e.y - p2.y) < wpn.range) {
+                    e.hp -= baseDmg; e.hitFlash = 8;
+                    if (Math.random() < 0.25 && !e.isBoss) { e.stunTimer = 120; e.stunned = true; }
+                    createExplosion(e.x, e.y, '#9e9e9e');
+                    state.damageNumbers.push({ x: e.x, y: e.y - 10, value: Math.round(baseDmg), life: 50, vy: -1.5, crit: isCrit });
+                }
+            });
+        }
     } else if (wpnKey === 'goldenSword') {
         // Melee + bonus gold on hit
         const p2 = state.player;
@@ -830,10 +854,13 @@ function hitEnemies(cx, cy, range, damage, isCrit = false, isExplosion = false) 
             if (p.vampDamageMult) d *= p.vampDamageMult;
             // Reaper character: instakill chance
             if (p.charInstakill && !e.isBoss && Math.random() < p.charInstakill) d = e.hp + 1;
+            // Gamer: INSTAKILL charges
+            if (p.charGamer && (p.gamerInstakill || 0) > 0 && !e.isBoss) { d = e.hp + 1; p.gamerInstakill--; }
             e.hp -= d; e.hitFlash = 6;
             if (isExplosion) e.hitByExplosion = state.frame;
             e.hitByMelee = state.frame; // mark for Speed Demon tracking
             if (p.charBlob) p.blobDamageDealt = (p.blobDamageDealt || 0) + d;
+            if (state.currentQuest && state.currentQuest.type === 'damage') state.currentQuest.progress = (state.currentQuest.progress || 0) + d;
             // Lifesteal (upgrade)
             if (p.lifeStealBonus > 0) p.hp = Math.min(p.maxHp, p.hp + d * p.lifeStealBonus);
             // Lifesteal (vampire character)
@@ -909,6 +936,8 @@ function tryDash() {
             for (let k = 0; k < 6; k++) state.particles.push({ x: p.x, y: p.y, vx: (Math.random()-0.5)*3, vy: (Math.random()-0.5)*3, life: 30, color: 'rgba(160,255,160,0.6)' });
         }
     }
+    // Daily challenge: no dash modifier
+    if (state._dailyNoDash) { showNotif('No Dash! (daily modifier)'); return; }
     p.dashing = true; p.dashTimer = 8; p.dashCooldown = cooldown;
     state._mpDashing = true; // tell host we dashed this frame
     // Ninja: become invisible during dash, trigger post-dash slow

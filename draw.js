@@ -118,79 +118,125 @@ function draw() {
         mb.dayT = (mb.dayT + 0.4) % 3600;
 
         // ── Day/night cycle sky ──
-        const dp = mb.dayT / 3600; // 0-1 normalized
-        // phases: 0-0.08 dawn, 0.08-0.5 day, 0.5-0.58 dusk, 0.58-1.0 night
-        let isNight = false;
+        // Day = 60% of cycle (dp 0.20–0.80), Night = 40% (dp 0.80–1.20 wrapping)
+        const dp = mb.dayT / 3600; // 0–1 normalized
+        const isNight = dp < 0.20 || dp > 0.80;
+        // Stars: full during black night, fade during colour transitions
+        const starAlpha = dp < 0.17 ? 1 :
+                          dp < 0.32 ? 1 - (dp - 0.17) / 0.15 :
+                          dp < 0.68 ? 0 :
+                          dp < 0.83 ? (dp - 0.68) / 0.15 : 1;
         let skyTop, skyBot, ambientBright;
-        if (dp < 0.08) { // dawn
-            const t2 = dp / 0.08;
-            skyTop = _menuLerpColor('#030310', '#e64a19', t2);
-            skyBot = _menuLerpColor('#12050a', '#ff8f00', t2);
-            ambientBright = t2 * 0.5;
-        } else if (dp < 0.5) { // day
-            const t2 = (dp - 0.08) / 0.42;
+        if (dp < 0.17) {                         // night: fully black
+            skyTop = '#030310'; skyBot = '#12050a'; ambientBright = 0;
+        } else if (dp < 0.20) {                  // dawn: black → red  (3%)
+            const t2 = (dp - 0.17) / 0.03;
+            skyTop = _menuLerpColor('#030310', '#5d0000', t2);
+            skyBot = _menuLerpColor('#12050a', '#7b0000', t2);
+            ambientBright = t2 * 0.2;
+        } else if (dp < 0.24) {                  // dawn: red → orange  (4%)
+            const t2 = (dp - 0.20) / 0.04;
+            skyTop = _menuLerpColor('#5d0000', '#e64a19', t2);
+            skyBot = _menuLerpColor('#7b0000', '#ff8f00', t2);
+            ambientBright = 0.2 + t2 * 0.3;
+        } else if (dp < 0.32) {                  // dawn: orange → blue  (8%)
+            const t2 = (dp - 0.24) / 0.08;
             skyTop = _menuLerpColor('#e64a19', '#1565c0', t2);
             skyBot = _menuLerpColor('#ff8f00', '#42a5f5', t2);
-            ambientBright = 0.5 + t2 * 0.5;
-        } else if (dp < 0.58) { // dusk
-            const t2 = (dp - 0.5) / 0.08;
-            skyTop = _menuLerpColor('#1565c0', '#b71c1c', t2);
-            skyBot = _menuLerpColor('#42a5f5', '#ff6f00', t2);
-            ambientBright = 1 - t2 * 0.7;
-            isNight = t2 > 0.6;
-        } else { // night
-            skyTop = '#030310'; skyBot = '#12050a';
-            ambientBright = 0; isNight = true;
+            ambientBright = 0.5 + t2 * 0.3;
+        } else if (dp < 0.45) {                  // midday: blue → light blue  (slow)
+            const t2 = (dp - 0.32) / 0.13;
+            skyTop = _menuLerpColor('#1565c0', '#0d47a1', t2);
+            skyBot = _menuLerpColor('#42a5f5', '#81d4fa', t2);
+            ambientBright = 0.8 + t2 * 0.2;
+        } else if (dp < 0.55) {                  // peak: light blue hold  (slow)
+            skyTop = '#0d47a1'; skyBot = '#81d4fa';
+            ambientBright = 1.0;
+        } else if (dp < 0.68) {                  // afternoon: light blue → blue  (slow)
+            const t2 = (dp - 0.55) / 0.13;
+            skyTop = _menuLerpColor('#0d47a1', '#1565c0', t2);
+            skyBot = _menuLerpColor('#81d4fa', '#42a5f5', t2);
+            ambientBright = 1 - t2 * 0.2;
+        } else if (dp < 0.76) {                  // evening: blue → orange  (8%)
+            const t2 = (dp - 0.68) / 0.08;
+            skyTop = _menuLerpColor('#1565c0', '#e64a19', t2);
+            skyBot = _menuLerpColor('#42a5f5', '#ff8f00', t2);
+            ambientBright = 0.8 - t2 * 0.4;
+        } else if (dp < 0.80) {                  // evening: orange → red  (4%)
+            const t2 = (dp - 0.76) / 0.04;
+            skyTop = _menuLerpColor('#e64a19', '#5d0000', t2);
+            skyBot = _menuLerpColor('#ff8f00', '#7b0000', t2);
+            ambientBright = 0.4 - t2 * 0.3;
+        } else if (dp < 0.83) {                  // night: red → black  (3%)
+            const t2 = (dp - 0.80) / 0.03;
+            skyTop = _menuLerpColor('#5d0000', '#030310', t2);
+            skyBot = _menuLerpColor('#7b0000', '#12050a', t2);
+            ambientBright = 0.1 - t2 * 0.1;
+        } else {                                 // night: fully black
+            skyTop = '#030310'; skyBot = '#12050a'; ambientBright = 0;
         }
         const skyG = ctx.createLinearGradient(0, 0, 0, 600);
         skyG.addColorStop(0, skyTop); skyG.addColorStop(1, skyBot);
         ctx.fillStyle = skyG; ctx.fillRect(0, 0, 800, 600);
 
         // ── Sun or Moon ──
-        const sunAngle = dp * Math.PI * 2 - Math.PI / 2;
-        const sunX = 400 + Math.cos(sunAngle) * 340;
-        const sunY = 300 + Math.sin(sunAngle) * 280;
-        if (sunY < 490) {
-            if (isNight) {
-                // Pixel-art moon: layered gray squares with craters
-                const mx = Math.round(sunX), my = Math.round(sunY);
-                ctx.fillStyle = '#c8cfd4'; ctx.fillRect(mx-7, my-7, 14, 14);
-                ctx.fillStyle = '#dce5ea'; ctx.fillRect(mx-5, my-5, 10, 10);
-                ctx.fillStyle = '#b0bec5'; ctx.fillRect(mx-3, my-3, 4, 4);   // crater 1
-                ctx.fillStyle = '#b0bec5'; ctx.fillRect(mx+1, my+2, 3, 3);   // crater 2
-                ctx.fillStyle = '#b0bec5'; ctx.fillRect(mx-4, my+3, 3, 3);   // crater 3
-                ctx.fillStyle = '#eceff1'; ctx.fillRect(mx-5, my-5, 3, 3);   // highlight
-            } else {
-                // Pixel-art sun: yellow center + 8 directional rays
-                const sx = Math.round(sunX), sy = Math.round(sunY);
-                // Glow halo (very faint)
-                ctx.globalAlpha = 0.12 * ambientBright;
-                ctx.fillStyle = '#fffde7'; ctx.fillRect(sx-20, sy-20, 40, 40);
-                ctx.globalAlpha = 1;
-                // Cardinal rays
-                ctx.fillStyle = '#fff176';
-                ctx.fillRect(sx-3, sy-15, 6, 6);  // top
-                ctx.fillRect(sx-3, sy+9,  6, 6);  // bottom
-                ctx.fillRect(sx-15, sy-3, 6, 6);  // left
-                ctx.fillRect(sx+9,  sy-3, 6, 6);  // right
-                // Diagonal rays
-                ctx.fillRect(sx-12, sy-12, 4, 4);
-                ctx.fillRect(sx+8,  sy-12, 4, 4);
-                ctx.fillRect(sx-12, sy+8,  4, 4);
-                ctx.fillRect(sx+8,  sy+8,  4, 4);
-                // Core
-                ctx.fillStyle = '#ffee58'; ctx.fillRect(sx-7, sy-7, 14, 14);
-                ctx.fillStyle = '#fff9c4'; ctx.fillRect(sx-5, sy-5, 10, 10);
-                ctx.fillStyle = '#ffffff'; ctx.fillRect(sx-2, sy-2, 4, 4);
-            }
+        // Sun: dp 0.23→0.77 (narrower than isNight so there's a dark gap before moon rises/after it sets)
+        // Moon: dp 0.93→0.15 (appears after sky fully black, gone before dawn colors)
+        // Both start/end at y=295 (well behind mountain peaks) so they rise gradually into view.
+        let sunX, sunY, moonX, moonY;
+        const sunVisible = dp > 0.20 && dp < 0.80;
+        const moonVisible = dp > 0.84 || dp < 0.16;
+        if (sunVisible) {
+            const t = (dp - 0.20) / 0.60;
+            sunX = 80 + t * 640;
+            sunY = 295 - 245 * Math.sin(t * Math.PI); // y=295 at tips (behind mountains), y=50 at noon
+        }
+        if (moonVisible) {
+            const nt = dp > 0.84 ? (dp - 0.84) / 0.32 : (dp + 0.16) / 0.32;
+            moonX = 80 + nt * 640;
+            moonY = 295 - 245 * Math.sin(nt * Math.PI);
         }
 
-        // ── Stars (night/dawn only) ──
-        if (isNight || dp < 0.08 || dp > 0.55) {
-            const starAlpha = isNight ? 1 : (dp < 0.08 ? 1 - dp / 0.08 : (dp - 0.55) / 0.05);
+        // Draw moon during night (mountains drawn after will naturally layer over it if it dips low)
+        if (moonVisible) {
+            const mx = Math.round(moonX), my = Math.round(moonY);
+            ctx.fillStyle = '#c8cfd4'; ctx.fillRect(mx-7, my-7, 14, 14);
+            ctx.fillStyle = '#dce5ea'; ctx.fillRect(mx-5, my-5, 10, 10);
+            ctx.fillStyle = '#b0bec5'; ctx.fillRect(mx-3, my-3, 4, 4);
+            ctx.fillStyle = '#b0bec5'; ctx.fillRect(mx+1, my+2, 3, 3);
+            ctx.fillStyle = '#b0bec5'; ctx.fillRect(mx-4, my+3, 3, 3);
+            ctx.fillStyle = '#eceff1'; ctx.fillRect(mx-5, my-5, 3, 3);
+        }
+
+        // Draw sun during day
+        if (sunVisible) {
+            const sx = Math.round(sunX), sy = Math.round(sunY);
+            // Glow halo (very faint)
+            ctx.globalAlpha = 0.12 * ambientBright;
+            ctx.fillStyle = '#fffde7'; ctx.fillRect(sx-20, sy-20, 40, 40);
+            ctx.globalAlpha = 1;
+            // Cardinal rays
+            ctx.fillStyle = '#fff176';
+            ctx.fillRect(sx-3, sy-15, 6, 6);  // top
+            ctx.fillRect(sx-3, sy+9,  6, 6);  // bottom
+            ctx.fillRect(sx-15, sy-3, 6, 6);  // left
+            ctx.fillRect(sx+9,  sy-3, 6, 6);  // right
+            // Diagonal rays
+            ctx.fillRect(sx-12, sy-12, 4, 4);
+            ctx.fillRect(sx+8,  sy-12, 4, 4);
+            ctx.fillRect(sx-12, sy+8,  4, 4);
+            ctx.fillRect(sx+8,  sy+8,  4, 4);
+            // Core
+            ctx.fillStyle = '#ffee58'; ctx.fillRect(sx-7, sy-7, 14, 14);
+            ctx.fillStyle = '#fff9c4'; ctx.fillRect(sx-5, sy-5, 10, 10);
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(sx-2, sy-2, 4, 4);
+        }
+
+        // ── Stars — fade in/out smoothly with starAlpha ──
+        if (starAlpha > 0) {
             mb.stars.forEach(s => {
                 s.phase += s.speed;
-                ctx.globalAlpha = Math.max(0, starAlpha) * (0.45 + Math.sin(s.phase) * 0.45);
+                ctx.globalAlpha = starAlpha * (0.45 + Math.sin(s.phase) * 0.45);
                 ctx.fillStyle = s.size > 1 ? '#ffe8a0' : '#ffffff';
                 ctx.fillRect(s.x, s.y, s.size, s.size);
             });
@@ -1056,6 +1102,62 @@ function draw() {
         ctx.fillRect(x - 5, y - 1, 10, 4); ctx.fillRect(x - 3, y + 3, 6, 2); ctx.fillRect(x - 1, y + 5, 2, 2);
         ctx.restore();
     });
+
+    // Time tokens (Old Man)
+    state.timeTokenPickups.forEach(tk => {
+        const tx = tk.x - cx, ty = tk.y - cy + Math.sin(state.frame * 0.1) * 3;
+        ctx.save();
+        ctx.shadowColor = '#a78bfa'; ctx.shadowBlur = 10 + Math.sin(state.frame * 0.12) * 4;
+        // Hourglass pixel art
+        ctx.fillStyle = '#a78bfa';
+        ctx.fillRect(tx - 4, ty - 6, 8, 2);  // top bar
+        ctx.fillRect(tx - 4, ty + 4, 8, 2);  // bottom bar
+        ctx.fillRect(tx - 3, ty - 4, 2, 3);  ctx.fillRect(tx + 1, ty - 4, 2, 3); // top glass
+        ctx.fillRect(tx - 1, ty - 1, 2, 2);  // center pinch
+        ctx.fillRect(tx - 3, ty + 1, 2, 3);  ctx.fillRect(tx + 1, ty + 1, 2, 3); // bottom glass
+        ctx.fillStyle = '#e0d0ff';
+        ctx.fillRect(tx - 2, ty - 3, 1, 2);  // sand trickle
+        ctx.restore();
+    });
+
+    // Dungeon portals
+    drawDungeon();
+
+    // Challenge zone
+    if (state.challengeZone && !state.challengeZone.complete) {
+        const cz = state.challengeZone;
+        const czx = cz.x - cx, czy = cz.y - cy;
+        ctx.save();
+        const pulse = 0.7 + Math.sin(state.frame * 0.08) * 0.3;
+        if (cz.active) {
+            // Stone wall ring: draw blocks around perimeter
+            const wallCount = 28;
+            for (let wi = 0; wi < wallCount; wi++) {
+                const wa = (wi / wallCount) * Math.PI * 2;
+                const wx = czx + Math.cos(wa) * cz.r, wy = czy + Math.sin(wa) * cz.r;
+                ctx.fillStyle = '#546e7a'; ctx.fillRect(wx - 5, wy - 5, 10, 10);
+                ctx.fillStyle = '#37474f'; ctx.fillRect(wx - 5, wy - 5, 5, 5);
+                ctx.fillStyle = '#607d8b'; ctx.fillRect(wx, wy, 5, 5);
+            }
+            // Red tint fill
+            ctx.fillStyle = `rgba(244,67,54,0.06)`; ctx.beginPath(); ctx.arc(czx, czy, cz.r, 0, Math.PI * 2); ctx.fill();
+            // Wave progress
+            ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center'; ctx.fillStyle = '#ff7043';
+            ctx.fillText('WAVE ' + cz.wave + '/' + cz.maxWaves + ' — ' + cz.enemiesLeft + ' left', czx, czy - cz.r - 8);
+        } else {
+            // Inactive: glowing purple circle beckoning player
+            ctx.strokeStyle = `rgba(179,136,255,${pulse})`; ctx.lineWidth = 2;
+            ctx.setLineDash([6, 6]);
+            ctx.beginPath(); ctx.arc(czx, czy, cz.r, 0, Math.PI * 2); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = `rgba(103,58,183,0.08)`; ctx.beginPath(); ctx.arc(czx, czy, cz.r, 0, Math.PI * 2); ctx.fill();
+            ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center'; ctx.fillStyle = '#b39ddb';
+            ctx.fillText('⚔ CHALLENGE ZONE', czx, czy - cz.r - 8);
+            // Skull icon in center
+            ctx.font = '18px monospace'; ctx.fillText('☠', czx, czy + 6);
+        }
+        ctx.restore();
+    }
 
     // Enemies
     state.enemies.forEach(e => {
@@ -2175,6 +2277,24 @@ function draw() {
             ctx.fillStyle = '#ffd700'; ctx.fillText(ev.name, canvas.width / 2, 13);
             ctx.restore();
         }
+        // Quest HUD (bottom-right corner)
+        if (state.currentQuest) {
+            const q = state.currentQuest;
+            const pct = Math.min(1, q.progress / q.target);
+            const barW = 100, barH = 6;
+            const bx = canvas.width - barW - 8, by = canvas.height - 32;
+            ctx.save();
+            ctx.globalAlpha = 0.88;
+            ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(bx - 4, by - 14, barW + 8, 26);
+            ctx.font = '6px monospace'; ctx.textAlign = 'left'; ctx.fillStyle = '#ffd700';
+            ctx.fillText('QUEST: ' + q.name, bx, by - 4);
+            ctx.fillStyle = '#333'; ctx.fillRect(bx, by, barW, barH);
+            const barCol = pct > 0.6 ? '#69f0ae' : pct > 0.3 ? '#ffd700' : '#ff7043';
+            ctx.fillStyle = barCol; ctx.fillRect(bx, by, Math.round(barW * pct), barH);
+            ctx.font = '5px monospace'; ctx.fillStyle = '#aaa';
+            ctx.fillText(Math.round(q.progress) + '/' + q.target, bx, by + barH + 7);
+            ctx.restore();
+        }
         // Weather label (top-right corner)
         if (_wds && _wds.name) {
             ctx.save();
@@ -2472,6 +2592,22 @@ function draw() {
         ctx.fillText('LV' + xp.xpLevel + '  ' + xp.xp + '/' + xp.xpToNext + ' XP' + spTxt, canvas.width / 2, bY - 3);
     }
     if (state.gameOver) { ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(0, 0, canvas.width, canvas.height); }
+    // Daily challenge banner
+    if (state.isDailyChallenge && !state.gameOver) {
+        const pulse = 0.75 + Math.sin(state.frame * 0.05) * 0.25;
+        ctx.save();
+        ctx.font = 'bold 7px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = `rgba(255,215,0,${pulse})`;
+        ctx.fillText('★ DAILY CHALLENGE ★', canvas.width / 2, 14);
+        if (state.dailyParams) {
+            const multStr = state.dailyParams.scoreMult.toFixed(1) + '× SCORE';
+            ctx.font = '6px monospace';
+            ctx.fillStyle = `rgba(105,240,174,${pulse})`;
+            ctx.fillText(multStr, canvas.width / 2, 23);
+        }
+        ctx.restore();
+    }
     if (_swFR) CanvasRenderingContext2D.prototype.fillRect = _swFR; // restore after stickWorld frame
 }
 
@@ -3345,7 +3481,9 @@ function drawPlayer() {
     const px = state.player.x - state.camera.x, py = state.player.y - state.camera.y, p = state.player;
     ctx.save(); ctx.translate(px, py);
     if (p.ninjaInvisible) ctx.globalAlpha = 0.28; // Ninja: translucent to player while dashing
+    if (p.superOldMan) { ctx.shadowColor = '#a78bfa'; ctx.shadowBlur = 18 + Math.sin(state.frame * 0.15) * 8; }
     if (p.sizeScale && p.sizeScale !== 1) ctx.scale(p.sizeScale, p.sizeScale);
+    if (p.superOldMan) ctx.scale(2, 2);
 
     // Boat hull when on water
     if (isOnWater(p.x, p.y)) {

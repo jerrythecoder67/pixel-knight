@@ -76,7 +76,7 @@ function updateWave() {
                 );
             }
         }
-        const bossInterval = state.difficulty === 'extreme' ? 20 : 10;
+        const bossInterval = state._dailyBossRush ? 3 : (state.difficulty === 'extreme' ? 20 : 10);
         const reaperInterval = state.difficulty === 'extreme' ? 40 : 20;
         if (p.wave % bossInterval === 0) {
             // Check for world final boss at reaper-interval multiples
@@ -107,6 +107,15 @@ function updateWave() {
             showNotif('Wave ' + p.wave + (p.wave % 5 === 0 ? ' — Elite Wave!' : '') + '!');
         }
         if (p.wave % 5 === 0 && p.wave > 0 && !persist.achievements.gamerUnlock) showGamerShop();
+        // Quest system: new quest every 3 waves
+        state.questWaveCounter = (state.questWaveCounter || 0) + 1;
+        if (state.questWaveCounter >= 3) {
+            state.questWaveCounter = 0;
+            if (state.currentQuest) showNotif('Quest failed: ' + state.currentQuest.name);
+            const pick = QUESTS[Math.floor(Math.random() * QUESTS.length)];
+            state.currentQuest = { ...pick, progress: 0, _noHitKills: 0, _noDashKills: 0, _goldAtStart: p.totalGoldEarned || 0 };
+            showNotif('NEW QUEST: ' + pick.name + ' — ' + pick.desc, true);
+        }
         // 5% chance per wave: random mid-run event
         if (!state.activeEvent && Math.random() < 0.05) {
             const ev = MID_RUN_EVENTS[Math.floor(Math.random() * MID_RUN_EVENTS.length)];

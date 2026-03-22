@@ -380,6 +380,17 @@ function applyIslandVariant() {
         const r = Math.floor(key / 10000), c = key % 10000;
         if (terrainMap[r][c] !== 'lava' && terrainMap[r][c] !== 'water') terrainMap[r][c] = 'sand';
     }
+
+    // Post-process: any stone tile directly adjacent to any water (lake or ocean) becomes sand.
+    // Catches stone tiles on the far side of lakes near the coast that BFS expansion can't reach.
+    for (let r = 1; r < rows - 1; r++) {
+        for (let c = 1; c < cols - 1; c++) {
+            if (terrainMap[r][c] !== 'stone') continue;
+            if ([[r-1,c],[r+1,c],[r,c-1],[r,c+1]].some(([ar,ac]) => terrainMap[ar]?.[ac] === 'water')) {
+                terrainMap[r][c] = 'sand';
+            }
+        }
+    }
 }
 
 // ─── MAP VARIANT: CANYON — chasm down the middle with slight diagonal + wood bridges ───

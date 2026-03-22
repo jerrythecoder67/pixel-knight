@@ -508,6 +508,16 @@ const CHARACTERS = {
     },
 };
 
+// ─── GAMER CHEAT CODES ───
+const GAMER_CODES = [
+    { id: 'godmode',   name: 'GODMODE',    icon: '🛡', color: '#ffd700', desc: 'Invincible for 5 seconds.',          duration: 300 },
+    { id: 'goldgod',   name: 'GOLDGOD',    icon: '💰', color: '#ffeb3b', desc: 'Instantly gain 500 gold.',           duration: 0   },
+    { id: 'instakill', name: 'INSTAKILL',  icon: '☠',  color: '#f44336', desc: 'Next 3 hits kill non-bosses.',       duration: 0   },
+    { id: 'speedhack', name: 'SPEEDHACK',  icon: '⚡', color: '#00e5ff', desc: '3× movement speed for 10 seconds.',  duration: 600 },
+    { id: 'aimbot',    name: 'AIMBOT',     icon: '🎯', color: '#69f0ae', desc: 'All attacks auto-crit for 15s.',     duration: 900 },
+    { id: 'bigmode',   name: 'BIGMODE',    icon: '⬆',  color: '#e040fb', desc: '2× size + 2× damage for 8 seconds.',duration: 480 },
+];
+
 // ─── BLOB GENE SYSTEM ───
 const BLOB_GENES = [
     { id: 'spike',  name: 'Spike',        icon: '▲', color: '#66bb6a', desc: '+25% damage. You are pointy.',               startUnlocked: true },
@@ -1746,6 +1756,20 @@ const MID_RUN_EVENTS = [
         apply:  (s, p) => { s._frostActive = true; },
         remove: (s, p) => { s._frostActive = false; }
     },
+];
+
+// ─── QUESTS ───
+// Each quest: { id, name, desc, type, target, reward: { gold?, heart?, upgrade? } }
+// type: 'waveKills' | 'streak' | 'damage' | 'frames' | 'noHit' | 'bossKill' | 'goldCollect'
+const QUESTS = [
+    { id: 'waveKills', name: 'Monster Slayer',  desc: 'Kill 12 enemies this wave',           type: 'waveKills',   target: 12,   reward: { gold: 120 } },
+    { id: 'streak',    name: 'Hot Streak',      desc: 'Reach a 10× kill streak',             type: 'streak',      target: 10,   reward: { gold: 180 } },
+    { id: 'damage',    name: 'Damage Dealer',   desc: 'Deal 500 damage total',               type: 'damage',      target: 500,  reward: { gold: 150 } },
+    { id: 'survive',   name: 'Survivor',        desc: 'Survive 45 seconds',                  type: 'frames',      target: 2700, reward: { heart: 1 } },
+    { id: 'noHit',     name: 'Untouchable',     desc: 'Kill 5 enemies without being hit',    type: 'noHit',       target: 5,    reward: { gold: 300 } },
+    { id: 'bossKill',  name: 'Boss Slayer',     desc: 'Defeat the next boss',                type: 'bossKill',    target: 1,    reward: { gold: 250, heart: 1 } },
+    { id: 'goldCollect', name: 'Gold Rush',     desc: 'Collect 200 gold in this wave',       type: 'goldCollect', target: 200,  reward: { upgrade: 1 } },
+    { id: 'noDash',    name: 'Brave Stance',    desc: 'Kill 8 enemies without dashing',      type: 'noDash',      target: 8,    reward: { gold: 200 } },
 ];
 
 // ─── WEATHER ───

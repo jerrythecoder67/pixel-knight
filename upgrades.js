@@ -247,6 +247,21 @@ function showGeneUI() {
     const overlay = document.getElementById('gene-overlay');
     overlay.classList.remove('hidden');
 
+    // Show equipped genes
+    const equippedEl = document.getElementById('gene-equipped');
+    if (equippedEl) {
+        equippedEl.innerHTML = '';
+        (p.blobGenes || []).forEach(id => {
+            const g = BLOB_GENES.find(x => x.id === id);
+            if (!g) return;
+            const chip = document.createElement('div');
+            chip.style.cssText = `font-family:var(--font-pixel);font-size:6px;color:${g.color};background:#0d1f0d;border:1px solid ${g.color};border-radius:3px;padding:2px 6px;`;
+            chip.textContent = g.icon + ' ' + g.name;
+            equippedEl.appendChild(chip);
+        });
+        if ((p.blobGenes || []).length === 0) equippedEl.innerHTML = '<span style="font-family:var(--font-pixel);font-size:6px;color:#444">No genes equipped yet</span>';
+    }
+
     // Available genes: unlocked this run, not already equipped
     const available = BLOB_GENES.filter(g =>
         (g.startUnlocked || p.blobGeneUnlocks[g.unlockKey]) && !p.blobGenes.includes(g.id)

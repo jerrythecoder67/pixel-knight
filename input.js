@@ -70,6 +70,20 @@ window.addEventListener('keydown', e => {
     if (k === '4') { if (state.player.character === 'wizard') castRune(4); else equipSlot(4); }
     if (k === '5') equipSlot(5);
     if (k === 'b') toggleBlacksmith();
+    if (k === 'v' && state.player.charGamer && !state.paused && !state.gameOver) {
+        const p = state.player;
+        if (!p.gamerCodes || p.gamerCodes.length === 0) { showNotif('No cheat codes queued!'); }
+        else if (p.gamerActiveCode) { showNotif('Code active: ' + p.gamerActiveCode.toUpperCase() + ' (' + Math.ceil(p.gamerCodeTimer / 60) + 's)'); }
+        else {
+            const id = p.gamerCodes.shift();
+            const code = GAMER_CODES.find(c => c.id === id);
+            p.gamerActiveCode = id;
+            p.gamerCodeTimer = code.duration;
+            if (id === 'goldgod') { p.gold += 500; p.totalGoldEarned = (p.totalGoldEarned || 0) + 500; p.gamerActiveCode = null; }
+            if (id === 'instakill') { p.gamerInstakill = 3; p.gamerActiveCode = null; }
+            showNotif('CHEAT CODE: ' + code.name + '! ' + code.desc);
+        }
+    }
     if (k === 'c') toggleDive();
     if (k === 'f') lightTorch();
     if (k === 'g') deployBarricade();
@@ -399,6 +413,11 @@ document.getElementById('gamer-shop-skip-btn').addEventListener('click', () => s
 document.getElementById('upgrade-close-btn').addEventListener('click', () => {
     state.upgradeOpen = false; state.paused = false;
     document.getElementById('upgrade-overlay').classList.add('hidden');
+    updateUpgradeButton();
+});
+document.getElementById('gene-close-btn').addEventListener('click', () => {
+    state.upgradeOpen = false; state.paused = false;
+    document.getElementById('gene-overlay').classList.add('hidden');
     updateUpgradeButton();
 });
 document.getElementById('upgrade-reroll-btn').addEventListener('click', () => {

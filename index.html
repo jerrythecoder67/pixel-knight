@@ -89,6 +89,11 @@
             <!-- Upgrade indicators -->
             <div id="upgrades-hud"></div>
 
+            <!-- Gamer cheat code HUD -->
+            <div id="gamer-codes-hud" style="display:none;position:absolute;bottom:60px;left:8px;font-family:var(--font-pixel);font-size:7px;pointer-events:none;"></div>
+            <!-- Old Man time token HUD -->
+            <div id="oldman-hud" style="display:none;position:absolute;bottom:80px;left:8px;font-family:var(--font-pixel);font-size:8px;pointer-events:none;"></div>
+
             <!-- Upgrade Choice Overlay -->
             <div id="upgrade-overlay" class="hidden">
                 <button id="upgrade-close-btn" class="overlay-close-x">&#x2715;</button>
@@ -102,8 +107,10 @@
 
             <!-- Blob Gene Selection Overlay -->
             <div id="gene-overlay" class="hidden">
+                <button id="gene-close-btn" class="overlay-close-x">&#x2715;</button>
                 <h2 style="color:#a5d6a7;font-family:var(--font-pixel);font-size:11px;letter-spacing:2px;">GENE SLOT READY</h2>
                 <p class="upgrade-subtitle">Pick a gene to equip:</p>
+                <div id="gene-equipped" style="display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-bottom:8px;"></div>
                 <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:10px;">
                     <canvas id="gene-blob-preview" width="80" height="100" style="border:1px solid #33691e;border-radius:4px;background:#0a1a0a;align-self:center;"></canvas>
                     <div id="gene-choices" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:360px;"></div>
@@ -199,9 +206,12 @@
                     <button class="diff-btn diff-hard" id="diff-hard">HARD<br><span>Brutal enemies, low HP &amp; Gold</span></button>
                     <button class="diff-btn diff-hard" id="diff-extreme" style="display:none;border-color:#ff1744;color:#ff1744;">☠ EXTREME<br><span>Beat Hard &lt;30min twice to unlock</span></button>
                 </div>
-                <button id="lore-btn">LORE</button>
-                <button id="lb-btn">LEADERBOARD</button>
-                <button id="mp-open-btn" onclick="document.getElementById('difficulty-overlay').classList.add('hidden');document.getElementById('mp-confirm-overlay').classList.remove('hidden');">MULTIPLAYER</button>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                    <button id="lore-btn">LORE</button>
+                    <button id="lb-btn">LEADERBOARD</button>
+                    <button id="daily-btn" onclick="openDailyOverlay()" style="color:#ffd700;border-color:#ffd700;">⚡ DAILY</button>
+                    <button id="mp-open-btn" onclick="document.getElementById('difficulty-overlay').classList.add('hidden');document.getElementById('mp-confirm-overlay').classList.remove('hidden');">MULTIPLAYER</button>
+                </div>
 
             </div>
 
@@ -214,13 +224,25 @@
             </div>
 
 
+            <!-- Daily Challenge Overlay -->
+            <div id="daily-overlay" class="hidden">
+                <button class="overlay-close-x" onclick="document.getElementById('daily-overlay').classList.add('hidden')">&#x2715;</button>
+                <h2 style="color:#ffd700;font-family:var(--font-pixel);font-size:10px;letter-spacing:2px;">⚡ DAILY CHALLENGE</h2>
+                <p class="upgrade-subtitle">Same challenge for everyone today</p>
+                <div id="daily-content"></div>
+                <div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
+                    <button id="daily-start-btn" style="color:#ffd700;border-color:#ffd700;">START DAILY CHALLENGE</button>
+                    <button id="daily-share-btn" onclick="shareDailyScore()" style="color:#aaa;border-color:#555;font-size:8px;">SHARE SCORE</button>
+                </div>
+            </div>
+
             <!-- MP Step 1: Confirmation -->
             <div id="mp-confirm-overlay" class="hidden">
                 <h2>MULTIPLAYER</h2>
                 <p class="upgrade-subtitle">Play with up to 4 friends?</p>
                 <div id="mp-confirm-choices">
-                    <button class="diff-btn diff-normal" onclick="mpConfirmYes()">YES</button>
-                    <button class="diff-btn" style="border-color:#555;color:#888" onclick="mpConfirmNo()">NO</button>
+                    <button class="diff-btn diff-normal mp-confirm-btn" onclick="mpConfirmYes()">YES</button>
+                    <button class="diff-btn diff-normal mp-confirm-btn" onclick="mpConfirmNo()">NO</button>
                 </div>
             </div>
 
@@ -432,7 +454,7 @@
                     <button id="reset-progress-btn" class="danger-btn">Reset Progress</button>
                     <button id="mp-respawn-btn" class="hidden diff-btn diff-normal" style="font-size:13px;padding:8px 18px">Respawn</button>
                     <button id="mp-spectate-btn" class="hidden diff-btn diff-easy" style="font-size:13px;padding:8px 18px">Spectate</button>
-                    <button id="mp-quit-btn" class="hidden diff-btn" style="font-size:13px;padding:8px 18px;border-color:#c62828;color:#ef9a9a">Quit</button>
+                    <button id="mp-quit-btn" class="hidden"></button>
                 </div>
             </div>
 
@@ -659,6 +681,8 @@
     <script src="update/creatures.js"></script>
     <script src="update/nature.js"></script>
     <script src="update/wave.js"></script>
+    <script src="dungeon.js"></script>
+    <script src="daily.js"></script>
     <script src="update/events.js"></script>
     <script src="update/weather.js"></script>
     <script src="update/pets.js"></script>

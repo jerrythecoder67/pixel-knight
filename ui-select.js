@@ -18,9 +18,6 @@ function selectPet(key) {
     state.alienWorld = false;
     state.dinoWorld = false;
     state.stickWorld = false;
-    // Apply character bonuses now that all selections are done, then start game
-    applyCharacterBonuses();
-    updateWeaponHUD();
     state.waveAllSpawned = false;
     state.paused = false;
     state.barricades = [];
@@ -31,6 +28,18 @@ function selectPet(key) {
     state.killedBySalamander = false;
     state.mapVariant = 'normal';
     state.activeEvent = null;
+    state.currentQuest = null; state.questWaveCounter = 0;
+    state.challengeZone = null; state._questHitThisFrame = false;
+    state.dungeonPortal = null; state.dungeon = null;
+    // Reset daily modifier flags before applying (so non-daily runs get clean state)
+    state._dailyEnemySpeedMult = 1; state._dailyNoHeal = false; state._dailyGoldMult = 1;
+    state._dailyEnemyHpMult = 1; state._dailyBossRush = false; state._dailyNoDash = false;
+    state._dailyEternalNight = false; state._dailyGiantEnemies = false;
+    state._dailyPoison = false; state._dailyFrenzy = false;
+    // Apply character bonuses now that all selections are done, then start game
+    applyCharacterBonuses();
+    if (state.isDailyChallenge) applyDailyModifiers();
+    updateWeaponHUD();
     state._eclipseActive = false; state._bloodMoonActive = false; state._earthquakeActive = false;
     state._meteorActive = false; state._healSpringActive = false; state._frostActive = false;
     state.weather = { stage: 0, wavesLeft: 0, extreme: null, rainParticles: [], lightningFlash: 0, tornadoX: WORLD_W/2, tornadoY: WORLD_H/2 };
@@ -109,6 +118,7 @@ function selectPet(key) {
         }
     }
     spawnTrees();
+    generateDungeon();
     // Build wave queue AFTER all world flags are set (alien/sailor world affects enemy types)
     state.waveSpawnQueue = buildWaveQueue(false);
     showNotif(PET_TYPES[key].icon + ' ' + PET_TYPES[key].name + ' joined you!');
@@ -117,6 +127,9 @@ function selectPet(key) {
 }
 
 function selectDifficulty(key) {
+    // Normal run clears any leftover daily challenge state
+    state.isDailyChallenge = false;
+    state.dailyParams = null;
     const d = DIFFICULTY_SETTINGS[key];
     state.difficulty = key;
     state.diffMult = d;
@@ -1884,6 +1897,10 @@ function applyCharacterBonuses() {
         case 'gamer':
             p.charGamer = true;
             p.gamerCombo = 0; p.gamerComboTimer = 0;
+            p.gamerCodes = [];          // earned code queue
+            p.gamerActiveCode = null;   // currently active timed code id
+            p.gamerCodeTimer = 0;       // frames remaining on active code
+            p.gamerInstakill = 0;       // instakill charges remaining
             _giveWeapon(p, 'gameController');
             break;
         case 'angel':

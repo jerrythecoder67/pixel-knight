@@ -45,6 +45,40 @@ function updateWeaponHUD() {
         }
     }
 }
+function updateOldManHUD() {
+    const el = document.getElementById('oldman-hud');
+    if (!el) return;
+    const p = state.player;
+    if (!p.charOldMan) { el.style.display = 'none'; return; }
+    el.style.display = '';
+    if (p.superOldMan) {
+        const secs = Math.ceil(p.superOldManTimer / 60);
+        el.innerHTML = `<div style="color:#a78bfa;text-shadow:0 0 6px #a78bfa">[SUPER OLD MAN] ${secs}s</div>`;
+    } else {
+        const tokens = p.timeTokens || 0;
+        const pips = ['○','○','○'].map((_, i) => i < tokens ? '<span style="color:#a78bfa">●</span>' : '<span style="color:#555">○</span>').join(' ');
+        el.innerHTML = `<div style="color:#ccc">TIME: ${pips} (${tokens}/3)</div>`;
+    }
+}
+
+function updateGamerCodesHUD() {
+    const el = document.getElementById('gamer-codes-hud');
+    if (!el) return;
+    const p = state.player;
+    if (!p.charGamer) { el.style.display = 'none'; return; }
+    el.style.display = '';
+    let html = '';
+    if (p.gamerActiveCode) {
+        const code = GAMER_CODES.find(c => c.id === p.gamerActiveCode);
+        const secs = Math.ceil(p.gamerCodeTimer / 60);
+        html += `<div style="color:${code?.color||'#fff'};margin-bottom:3px">[ACTIVE] ${p.gamerActiveCode.toUpperCase()}${secs > 0 ? ' ' + secs + 's' : ''}</div>`;
+    }
+    if (p.gamerInstakill > 0) html += `<div style="color:#f44336;margin-bottom:3px">[INSTAKILL] ${p.gamerInstakill} hit${p.gamerInstakill > 1 ? 's' : ''}</div>`;
+    const queue = p.gamerCodes || [];
+    if (queue.length > 0) html += `<div style="color:#aaa">QUEUED (V): ${queue.map(id => { const c = GAMER_CODES.find(x=>x.id===id); return c ? `<span style="color:${c.color}">${c.name}</span>` : id; }).join(' · ')}</div>`;
+    el.innerHTML = html || '<div style="color:#555">No codes (V)</div>';
+}
+
 function updateUpgradesHUD() {
     const el = document.getElementById('upgrades-hud'); el.innerHTML = '';
     state.player.upgrades.forEach(id => {

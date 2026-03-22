@@ -79,13 +79,13 @@ function spawnWaveEnemy(typeEntry) {
     const mpHp = (typeof mpDiffMult === 'function') ? mpDiffMult() : 1;
     const e = {
         x, y, w: 16, h: 16, type: tmpl.type,
-        hp: tmpl.hp * ws * hpMult * dm.enemyHpMult * reaperHpMult * mpHp,
-        maxHp: tmpl.hp * ws * hpMult * dm.enemyHpMult * reaperHpMult * mpHp,
+        hp: tmpl.hp * ws * hpMult * dm.enemyHpMult * reaperHpMult * mpHp * (state._dailyEnemyHpMult || 1) * (state._dailyFrenzy ? 0.7 : 1),
+        maxHp: tmpl.hp * ws * hpMult * dm.enemyHpMult * reaperHpMult * mpHp * (state._dailyEnemyHpMult || 1) * (state._dailyFrenzy ? 0.7 : 1),
         speed: (tmpl.speed + p.wave * 0.04) * (isHorde ? 1.2 : 1) * (isElite ? 1.2 : 1) * dm.enemySpeedMult,
         color: isElite ? brighten(tmpl.color) : tmpl.color,
         gold: tmpl.gold * (isHorde ? 0.5 : isElite ? 3 : 1),
         score: tmpl.score * (isHorde ? 0.5 : isElite ? 2 : 1),
-        sizeScale: (tmpl.size || 1) * (isHorde ? 0.85 : 1),
+        sizeScale: (tmpl.size || 1) * (isHorde ? 0.85 : 1) * (state._dailyGiantEnemies ? 1.5 : 1),
         animTimer: Math.random() * 100,
         elite: isElite, isBoss: false,
         knockbackResist: tmpl.knockbackResist || 0, hurtTimer: 0,

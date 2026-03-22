@@ -42,6 +42,7 @@ function updateEnemies() {
         const _wsCur = state.weather.extreme || (state.weather.stage > 0 ? WEATHER_STAGES[state.weather.stage] : null);
         if (_wsCur) spd *= _wsCur.speedMult;
         if (state._eclipseActive) spd *= 1.3;
+        if (state._dailyEnemySpeedMult && state._dailyEnemySpeedMult !== 1) spd *= state._dailyEnemySpeedMult;
         if (e.wolfSlowed > 0) spd *= 0.45;
         if (e.toxinSlowed && e.toxinSlowed >= state.frame) spd *= 0.6;
         if (e.stunned && e.stunTimer > 0) { e.stunTimer--; if (e.stunTimer <= 0) e.stunned = false; spd = 0; }
@@ -667,7 +668,7 @@ function updateEnemies() {
             // Shielded: paused host in MP (in shop etc.) is immune
             const _hostShielded = typeof MP !== 'undefined' && MP.hostShielded;
             if (hostDist < pContactDist && !(p.rabbitInvTimer > 0) && !_hostShielded) {
-                let dmg = (e.isBoss ? 1.5 : 0.5) * state.diffMult.enemyDmgMult * nightMult();
+                let dmg = (e.isBoss ? 1.5 : 0.5) * state.diffMult.enemyDmgMult * nightMult() * (state._dailyFrenzy ? 1.3 : 1) * (state._dailyEternalNight ? 1.2 : 1);
                 if (hasUpgrade('fortress')) dmg *= (0.6 - upgradeLevel('fortress') * 0.1);
                 // Turtle shell absorption (Iron Shell, branch 1)
                 if (p.pet === 'turtle' && petBranchIs(1, 0, 0) && p.petEvolveLevel >= 1) {
@@ -736,6 +737,8 @@ function updateEnemies() {
                     // Drain armor when player is hit
                     drainArmorDurability(1);
                     p.hp -= dmg;
+                    // Quest: mark player was hit this frame (noHit quest tracking)
+                    state._questHitThisFrame = true;
                     // Blob gene unlock tracking
                     if (p.charBlob) p.blobDmgTaken = (p.blobDmgTaken || 0) + dmg;
                     // Armor spikes: return damage to attacker
@@ -839,6 +842,14 @@ function updateEnemies() {
                 p.gamerComboTimer = 240; // 4s to keep combo going
                 if (p.gamerCombo % 5 === 0) showNotif('COMBO x' + p.gamerCombo + '! +' + Math.round(Math.min(p.gamerCombo, 20) * 4) + '% DMG');
             }
+            // Quest kill tracking
+            if (state.currentQuest && !state.currentQuest.failed) {
+                const q = state.currentQuest;
+                if (q.type === 'waveKills') q.progress = (q.progress || 0) + 1;
+                if (q.type === 'noHit') { q._noHitKills = (q._noHitKills || 0) + 1; }
+                if (q.type === 'noDash') { q._noDashKills = (q._noDashKills || 0) + 1; }
+                if (q.type === 'bossKill' && e.isBoss) q.progress = (q.progress || 0) + 1;
+            }
             // Blob gene: kill tracking + absorb
             if (p.charBlob) {
                 p.blobKillCount = (p.blobKillCount || 0) + 1;
@@ -901,6 +912,10 @@ function updateEnemies() {
             if (p.skills?.fury) p.furyKills = (p.furyKills || 0) + 1;
             let goldAmt = e.gold * (hasUpgrade('goldRush') ? 2 + upgradeLevel('goldRush') : 1) * p.streakMult * state.diffMult.goldMult * (p._eventGoldMult || 1);
             state.goldPickups.push({ x: e.x, y: e.y, amount: Math.round(goldAmt), life: 180 });
+            // Old Man: drop time tokens
+            if (p.charOldMan && !p.superOldMan && (e.isBoss || Math.random() < 0.20)) {
+                state.timeTokenPickups.push({ x: e.x + (Math.random()-0.5)*16, y: e.y + (Math.random()-0.5)*16, life: 360 });
+            }
             createExplosion(e.x, e.y, e.color);
             if (hasUpgrade('vampiric')) p.hp = Math.min(p.maxHp, p.hp + 5 + upgradeLevel('vampiric') * 3);
             if (Math.random() < 0.07) state.heartPickups.push({ x: e.x, y: e.y, life: 600 });
@@ -913,7 +928,25 @@ function updateEnemies() {
             }
             if (e.isBoss) {
                 state.bossActive = false; p.bossesKilled++;
+                // Gamer: earn a cheat code every 2 boss kills
+                if (p.charGamer && p.bossesKilled % 2 === 0) {
+                    const used = new Set([...(p.gamerCodes || []), p.gamerActiveCode].filter(Boolean));
+                    const pool = GAMER_CODES.filter(c => !used.has(c.id));
+                    const pick = (pool.length > 0 ? pool : GAMER_CODES)[Math.floor(Math.random() * (pool.length || GAMER_CODES.length))];
+                    p.gamerCodes = [...(p.gamerCodes || []), pick.id];
+                    showNotif('Cheat code earned: ' + pick.name + '! (Press V to activate)');
+                }
                 state.postBossCooldown = 420; // 7s grace — no wave advance or shadow demon
+                // 10% chance to spawn a challenge zone after boss kill
+                if (!state.challengeZone && !e.isGrimReaper && Math.random() < 0.10) {
+                    const angle = Math.random() * Math.PI * 2, dist = 300 + Math.random() * 200;
+                    state.challengeZone = {
+                        x: Math.max(200, Math.min(WORLD_W - 200, p.x + Math.cos(angle) * dist)),
+                        y: Math.max(200, Math.min(WORLD_H - 200, p.y + Math.sin(angle) * dist)),
+                        r: 110, maxWaves: 3, wave: 0, active: false, complete: false, enemiesLeft: 0, _spawning: false
+                    };
+                    showNotif('A CHALLENGE ZONE appeared nearby!');
+                }
                 // Scientist unlock: kill any boss with an explosion
                 if ((e.hitByExplosion || 0) >= state.frame - 5 && !persist.achievements.bossExplosion) grantAchievement('bossExplosion');
                 if (e.isGrimReaper) {

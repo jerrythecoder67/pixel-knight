@@ -53,4 +53,7 @@ function updateHud() {
     } else {
         bossBarEl.classList.add('hidden');
     }
+
+    updateGamerCodesHUD();
+    updateOldManHUD();
 }

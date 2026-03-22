@@ -180,7 +180,7 @@ function mpConnectToHost() {
         MP.conns = [conn];
         conn.on('open', () => {
             document.getElementById('mp-join-status').textContent = 'Connected! Waiting for host...';
-            conn.send({ type: 'joinInfo', name: MP.playerName, character: persist.selectedCharacter || 'knight', skin: persist.selectedSkin || 'default' });
+            conn.send({ type: 'joinInfo', name: MP.playerName, character: persist.selectedCharacter || 'knight', skin: persist.selectedSkin || 'default', maxHp: state.player.maxHp || 100 });
             // Switch to guest waiting overlay
             _mpHide('mp-join-overlay');
             _mpShow('mp-guest-overlay');
@@ -316,9 +316,10 @@ function mpRegisterGuest(conn, data) {
     const slot = MP.guestPlayers.length + 1;
     const offsets = [{ x: 0, y: -60 }, { x: 60, y: 0 }, { x: -60, y: 0 }];
     const off = offsets[slot - 1] || { x: 0, y: 0 };
+    const _guestMaxHp = data.maxHp || 100;
     MP.guestPlayers.push({
         x: WORLD_W / 2 + off.x, y: WORLD_H / 2 + off.y,
-        hp: 100, maxHp: 100, speed: 3, damage: 10,
+        hp: _guestMaxHp, maxHp: _guestMaxHp, speed: 3, damage: 10,
         facingX: 1, facingY: 0, animFrame: 0, animTimer: 0,
         dashing: false, dashTimer: 0, dashCooldown: 0,
         hurtTimer: 0, attackCooldown: 0,
@@ -396,7 +397,7 @@ function mpGuestStartGame(data) {
 
 function mpHandleGuestInput(conn, data) {
     const gp = MP.guestPlayers.find(g => g._peerId === conn.peer);
-    if (gp) { gp._latestInput = data; gp.isPaused = !!data.paused; }
+    if (gp) { gp._latestInput = data; gp.isPaused = !!data.paused; if (data.weapon) gp.weapon = data.weapon; }
 }
 
 function mpUpdateGuestPlayers() {
@@ -484,7 +485,7 @@ function mpBroadcastState() {
         const lightSnap = {
             type: 'state',
             hp: { x: p.x, y: p.y, hp: p.hp, maxHp: p.maxHp, gold: p.gold, fx: p.facingX, af: p.animFrame, d: p.dashing, ch: p.character, nm: MP.playerName, wp: p.weapon || 'sword' },
-            gp: MP.guestPlayers.map(g => ({ id: g._peerId, x: g.x, y: g.y, hp: g.hp, mhp: g.maxHp, fx: g.facingX, af: g.animFrame, d: g.dashing, a: g.isAlive, ch: g.character, sk: g.skin, sl: g.slot, nm: g.name, wp: g.weapon || 'sword' })),
+            gp: MP.guestPlayers.map(g => ({ id: g._peerId, x: g.x, y: g.y, hp: g.hp, mhp: g.maxHp, fx: g.facingX, af: g.animFrame, d: g.dashing, a: g.isAlive, ch: g.character, sk: g.skin, sl: g.slot, nm: g.name, wp: g.weapon || 'sword', kl: g.kills })),
             gld: state.goldPickups.slice(0, 30).map(g => ({ x: g.x, y: g.y, a: g.amount })),
             wave: p.wave, kills: p.kills, boss: state.bossActive,
             dn: { ph: state.dayNight.phase, al: state.dayNight.alpha, day: state.dayNight.dayCount },
@@ -506,26 +507,36 @@ function mpBroadcastState() {
 function mpSendInputs() {
     if (!MP.active || MP.isHost || !MP.conns[0] || MP._spectating) return;
     try {
-        MP.conns[0].send({ type: 'input', frame: state.frame, keys: { ...state.keys }, joyDir: state.joyDir, attacking: state._mpAttacking || false, dashing: state._mpDashing || false, paused: !!state.paused });
+        MP.conns[0].send({ type: 'input', frame: state.frame, keys: { ...state.keys }, joyDir: state.joyDir, attacking: state._mpAttacking || false, dashing: state._mpDashing || false, paused: !!state.paused, weapon: state.player.weapon || 'sword' });
     } catch(e) {}
     state._mpAttacking = false;
     state._mpDashing = false;
 }
 
-function _mpApplyEnemies(en, wx) {
-    if (!en) return;
-    const _allTypes = [
+// Cache enemy type lookup map (built once, O(1) per lookup)
+let _mpTypeCache = null;
+function _mpGetTypeCache() {
+    if (_mpTypeCache) return _mpTypeCache;
+    _mpTypeCache = {};
+    const src = [
         ...(typeof ENEMY_TYPES !== 'undefined' ? ENEMY_TYPES : []),
         ...(typeof HUMAN_ENEMY_TYPES !== 'undefined' ? HUMAN_ENEMY_TYPES : []),
         ...(typeof DINO_ENEMY_TYPES !== 'undefined' ? DINO_ENEMY_TYPES : []),
         ...(typeof SAILOR_ENEMY_TYPES !== 'undefined' ? SAILOR_ENEMY_TYPES : []),
         ...(typeof ALIEN_ENEMY_TYPES !== 'undefined' ? ALIEN_ENEMY_TYPES : []),
     ];
+    src.forEach(t => { _mpTypeCache[t.type] = t; });
+    return _mpTypeCache;
+}
+
+function _mpApplyEnemies(en, wx) {
+    if (!en) return;
+    const typeMap = _mpGetTypeCache();
     // Merge preserving local animTimer (incremented each frame for smooth animation)
     const prevById = {};
     state.enemies.forEach((e, i) => { prevById[i] = e; });
     state.enemies = en.map((e, i) => {
-        const tmpl = _allTypes.find(t => t.type === e.type) || {};
+        const tmpl = typeMap[e.type] || {};
         const prev = prevById[i];
         return {
             x: e.x, y: e.y, hp: e.hp, maxHp: e.mhp, type: e.type,
@@ -553,14 +564,15 @@ function mpApplyState(snap) {
     // Separate my own guest data from other guests'
     const myGuestData = (snap.gp || []).find(g => g.id === MP.myPeerId);
     MP._remoteOtherGuests = (snap.gp || []).filter(g => g.id !== MP.myPeerId);
-    // Sync guest's own HP from host (authoritative)
-    if (myGuestData && state.player) {
+    // Sync guest's own HP and kills from host (authoritative)
+    if (myGuestData && state.player && !MP._spectating) {
         state.player.hp = myGuestData.hp;
         state.player.maxHp = myGuestData.mhp;
+        if (myGuestData.kl != null) state.player.kills = myGuestData.kl;
     }
     // Only sync gold when the shop isn't open (prevents purchase rollback)
     if (state.player && snap.hp && !state.shopOpen) state.player.gold = snap.hp.gold;
-    if (state.player && snap.wave != null) { state.player.wave = snap.wave; state.player.kills = snap.kills; }
+    if (state.player && snap.wave != null) state.player.wave = snap.wave;
     if (snap.boss != null) state.bossActive = snap.boss;
     if (snap.dn) { state.dayNight.alpha = snap.dn.al; state.dayNight.phase = snap.dn.ph; state.dayNight.dayCount = snap.dn.day; }
     if (snap.gld) state.goldPickups = snap.gld.map(g => ({ x: g.x, y: g.y, amount: g.a, life: 60 }));
@@ -585,30 +597,48 @@ function drawRemotePlayers() {
         }
     }
 
-    const _realPlayer = state.player;
-    const _realSkin = persist.selectedSkin;
-    const _realChar = persist.selectedCharacter;
+    // Character body colours for quick identification
+    const _rpBodyCol = { knight:'#5c6bc0', archer:'#66bb6a', mage:'#ab47bc', warrior:'#ef5350',
+        rogue:'#26c6da', bard:'#ffa726', druid:'#8d6e63', paladin:'#fff176',
+        villager:'#a5d6a7', default:'#90a4ae' };
 
     for (const rp of remotes) {
-        state.player = { ..._realPlayer, x: rp.x, y: rp.y, hp: rp.hp, maxHp: rp.maxHp, facingX: rp.facingX, facingY: rp.facingY, animFrame: rp.animFrame, dashing: rp.dashing, character: rp.character, weapon: rp.weapon || 'sword', hurtTimer: 0, ninjaInvisible: false, sizeScale: 1 };
-        persist.selectedSkin = rp.skin || 'default';
-        persist.selectedCharacter = rp.character || 'knight';
-        ctx.globalAlpha = rp.dashing ? 0.55 : 0.92;
-        try { drawPlayer(); } catch(e) {}
-        ctx.globalAlpha = 1;
-        // Restore immediately so a thrown exception can't corrupt the next frame
-        state.player = _realPlayer;
-        persist.selectedSkin = _realSkin;
-        persist.selectedCharacter = _realChar;
+        const sx = Math.round(rp.x - state.camera.x), sy = Math.round(rp.y - state.camera.y);
+        ctx.globalAlpha = rp.dashing ? 0.5 : 0.92;
+        const col = _rpBodyCol[rp.character] || _rpBodyCol.default;
 
-        const sx = rp.x - state.camera.x, sy = rp.y - state.camera.y;
+        // Legs (walk bob)
+        const bob = Math.floor(rp.animFrame / 8) % 2;
+        ctx.fillStyle = '#37474f';
+        ctx.fillRect(sx - 5, sy + 4 + (bob ? 2 : 0), 4, 6);
+        ctx.fillRect(sx + 1, sy + 4 + (bob ? 0 : 2), 4, 6);
+        // Body
+        ctx.fillStyle = col;
+        ctx.fillRect(sx - 7, sy - 4, 14, 10);
+        // Head
+        ctx.fillStyle = '#ffcc80';
+        ctx.fillRect(sx - 5, sy - 14, 10, 10);
+        // Eyes
+        const eyeOff = rp.facingX >= 0 ? 2 : -2;
+        ctx.fillStyle = '#111';
+        ctx.fillRect(sx + eyeOff - 1, sy - 11, 2, 2);
+        ctx.fillRect(sx + eyeOff + 2, sy - 11, 2, 2);
+        // Weapon stub
+        ctx.fillStyle = '#bdbdbd';
+        const wx = rp.facingX >= 0 ? sx + 7 : sx - 11;
+        ctx.fillRect(wx, sy - 6, 4, 8);
+
+        ctx.globalAlpha = 1;
+
+        // Name label
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 9px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText(rp.label, sx, sy - 32);
+        ctx.fillText(rp.label, sx, sy - 20);
 
+        // HP bar (only when damaged)
         if (rp.maxHp > 0 && rp.hp < rp.maxHp) {
-            const bw = 28, bh = 3, bx = sx - bw / 2, by = sy + 14;
+            const bw = 28, bh = 3, bx = sx - bw / 2, by = sy + 12;
             ctx.fillStyle = '#333'; ctx.fillRect(bx, by, bw, bh);
             ctx.fillStyle = '#4caf50'; ctx.fillRect(bx, by, bw * Math.max(0, rp.hp / rp.maxHp), bh);
         }
@@ -627,19 +657,19 @@ function _mpDeathOverlayShow() {
     document.getElementById('overlay-achievements').innerHTML = '';
     document.getElementById('overlay-run-history').innerHTML = '';
     document.getElementById('overlay-endless-lb').innerHTML = '';
-    document.getElementById('restart-btn').classList.add('hidden');
     document.getElementById('mp-spectate-btn').classList.remove('hidden');
-    document.getElementById('mp-quit-btn').classList.remove('hidden');
     document.getElementById('mp-respawn-btn').classList.add('hidden');
+    document.getElementById('mp-quit-btn').classList.add('hidden');
+    document.getElementById('restart-btn').classList.add('hidden'); // prevent accidental page reload
     document.getElementById('overlay').classList.remove('hidden');
 }
 
 function _mpDeathOverlayHide() {
     document.getElementById('overlay').classList.add('hidden');
-    document.getElementById('restart-btn').classList.remove('hidden');
     document.getElementById('mp-spectate-btn').classList.add('hidden');
     document.getElementById('mp-quit-btn').classList.add('hidden');
     document.getElementById('mp-respawn-btn').classList.add('hidden');
+    document.getElementById('restart-btn').classList.remove('hidden'); // restore for next real game over
     // Restore default overlay title/msg for the next real game over
     document.getElementById('overlay-title').textContent = 'GAME OVER';
     document.getElementById('overlay-msg').textContent = 'The shadows have claimed your soul.';
@@ -663,15 +693,16 @@ function mpGuestReceiveRespawnOffer() {
 function mpRequestRespawn() {
     if (!MP.active || MP.isHost || !MP.conns[0] || MP._respawnUsed) return;
     try { MP.conns[0].send({ type: 'respawnRequest' }); } catch(e) {}
-    _mpDeathOverlayHide();
-    MP._spectating = false;
-    showNotif('Respawning...');
+    // Keep spectating + overlay open until host confirms with 'respawned'
+    document.getElementById('mp-respawn-btn').classList.add('hidden');
+    document.getElementById('mp-spectate-btn').textContent = 'Respawning...';
 }
 
 function mpGuestReceiveRespawn(data) {
     MP._spectating = false;
     MP._respawnUsed = true;
     _mpDeathOverlayHide();
+    document.getElementById('mp-spectate-btn').textContent = 'Spectate';
     if (state.player) {
         state.player.hp = state.player.maxHp;
         if (data.x != null) { state.player.x = data.x; state.player.y = data.y; }

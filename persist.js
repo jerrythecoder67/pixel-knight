@@ -12,7 +12,8 @@ const PERSIST_DEFAULT = {
     fossilPos: null,
     runHistory: [],
     seenEnemies: {},
-    leaderboard: [], endlessLeaderboard: [] // endlessLeaderboard kept for backwards compat
+    leaderboard: [], endlessLeaderboard: [], // endlessLeaderboard kept for backwards compat
+    dailyChallenge: null
 };
 function loadPersist() {
     try { return Object.assign({}, PERSIST_DEFAULT, JSON.parse(localStorage.getItem(PERSIST_KEY) || '{}')); }

@@ -1,11 +1,12 @@
 // ─── NATURE: FIRE TRAILS, SHOCKWAVES, ENEMY PROJECTILES, PARTICLES, TREASURE CHESTS ───
 function updateNature() {
     const p = state.player;
+    const _mpGuest = typeof MP !== 'undefined' && MP.active && !MP.isHost;
 
     // Fire trails
     for (let i = state.fireTrails.length - 1; i >= 0; i--) {
         const f = state.fireTrails[i]; f.life--;
-        state.enemies.forEach(e => { if (Math.hypot(e.x - f.x, e.y - f.y) < 18) e.hp -= f.damage * 0.1; });
+        if (!_mpGuest) state.enemies.forEach(e => { if (Math.hypot(e.x - f.x, e.y - f.y) < 18) e.hp -= f.damage * 0.1; });
         if (f.life <= 0) state.fireTrails.splice(i, 1);
     }
     // Janitor slippery patches
@@ -22,7 +23,7 @@ function updateNature() {
         if (sw.delay && sw.delay > 0) { sw.delay--; continue; }
         sw.r = (sw.r || sw.radius || 10); sw.r += 5;
         if (!sw.radius) sw.radius = sw.r; else sw.radius = sw.r;
-        state.enemies.forEach(e => {
+        if (!_mpGuest) state.enemies.forEach(e => {
             if (Math.abs(Math.hypot(e.x - sw.x, e.y - sw.y) - sw.r) < 18) {
                 if (sw.isMegaphone) {
                     if (!sw.hitSet) sw.hitSet = new Set();
@@ -142,18 +143,35 @@ function updateNature() {
                 showNotif("IT'S A MIMIC!");
             } else {
                 ch.openedTimer = 100;
-                const roll = Math.random();
-                // Rubix cube: 2% chance from any chest (only if not yet found this run)
-                if (roll < 0.02 && !state.hasRubixCube && !persist.achievements.rubixCuberUnlock) {
-                    state.hasRubixCube = true;
-                    showNotif('Found a Rubix Cube! Press Z to try to solve it!');
-                } else if (roll < 0.5) {
-                    const amt = 60 + Math.floor(Math.random() * 120);
-                    p.gold += amt; showNotif('Chest! +' + amt + ' Gold!');
-                } else if (roll < 0.75) {
-                    p.hp = Math.min(p.maxHp, p.hp + 50); showNotif('Chest! +50 HP!');
+                if (ch.loot === 'dungeon') {
+                    // Dungeon chest: jackpot loot
+                    const goldAmt = 400 + Math.floor(Math.random() * 200) + p.wave * 15;
+                    p.gold += goldAmt; p.totalGoldEarned = (p.totalGoldEarned || 0) + goldAmt;
+                    p.hp = p.maxHp; // full heal
+                    state.pendingUpgradeCount += 2; updateUpgradeButton();
+                    showNotif('DUNGEON CHEST! +' + goldAmt + ' gold, full heal, 2 upgrades!', true);
+                    for (let k = 0; k < 8; k++) createExplosion(ch.x + (Math.random()-0.5)*40, ch.y + (Math.random()-0.5)*40, '#ffd700');
+                } else if (ch.loot === 'challenge') {
+                    // Challenge zone chest
+                    const goldAmt = 200 + Math.floor(Math.random() * 100) + p.wave * 8;
+                    p.gold += goldAmt; p.totalGoldEarned = (p.totalGoldEarned || 0) + goldAmt;
+                    p.hp = Math.min(p.maxHp, p.hp + 60);
+                    showNotif('Challenge Chest! +' + goldAmt + ' gold, +60 HP!', true);
+                    for (let k = 0; k < 5; k++) createExplosion(ch.x + (Math.random()-0.5)*30, ch.y + (Math.random()-0.5)*30, '#ff7043');
                 } else {
-                    state.pendingUpgradeCount++; updateUpgradeButton(); showNotif('Chest! Free Upgrade!');
+                    const roll = Math.random();
+                    // Rubix cube: 2% chance from any chest (only if not yet found this run)
+                    if (roll < 0.02 && !state.hasRubixCube && !persist.achievements.rubixCuberUnlock) {
+                        state.hasRubixCube = true;
+                        showNotif('Found a Rubix Cube! Press Z to try to solve it!');
+                    } else if (roll < 0.5) {
+                        const amt = 60 + Math.floor(Math.random() * 120);
+                        p.gold += amt; showNotif('Chest! +' + amt + ' Gold!');
+                    } else if (roll < 0.75) {
+                        p.hp = Math.min(p.maxHp, p.hp + 50); showNotif('Chest! +50 HP!');
+                    } else {
+                        state.pendingUpgradeCount++; updateUpgradeButton(); showNotif('Chest! Free Upgrade!');
+                    }
                 }
                 createExplosion(ch.x, ch.y, '#ffd700');
                 for (let k = 0; k < 3; k++) createExplosion(ch.x + (Math.random()-0.5)*24, ch.y + (Math.random()-0.5)*24, '#ffaa00');
@@ -161,7 +179,8 @@ function updateNature() {
         }
     }
 
-    // Particles
+    // Particles (cap at 300 to prevent FPS drops)
+    if (state.particles.length > 300) state.particles.splice(0, state.particles.length - 300);
     for (let i = state.particles.length - 1; i >= 0; i--) {
         const pt = state.particles[i]; pt.x += pt.vx; pt.y += pt.vy; pt.life--;
         if (pt.life <= 0) state.particles.splice(i, 1);

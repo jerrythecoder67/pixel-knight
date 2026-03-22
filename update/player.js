@@ -13,6 +13,8 @@ function updatePlayer() {
     if (dx !== 0 || dy !== 0) {
         const len = Math.hypot(dx, dy); dx /= len; dy /= len;
         let spd = p.speed;
+        if (p._gamerSpeedBoost) spd *= 3;
+        if (p.superOldMan) spd *= 3;
         if (p.dashing) spd *= 3;
         if (p.ninjaSlowTimer > 0) spd *= 0.45; // Ninja post-dash slow
         if (p.isShutdown) spd = 0; // Robot shutdown: can't move
@@ -53,6 +55,16 @@ function updatePlayer() {
         if (!_voidX && !_voidY) { p.x = _nx; p.y = _ny; }
         else if (!_voidX) { p.x = _nx; }
         else if (!_voidY) { p.y = _ny; }
+        // Challenge zone: lock player inside when active
+        if (state.challengeZone && state.challengeZone.active && !state.challengeZone.complete) {
+            const cz = state.challengeZone;
+            const distCZ = Math.hypot(p.x - cz.x, p.y - cz.y);
+            if (distCZ > cz.r - 10) {
+                const ang = Math.atan2(p.y - cz.y, p.x - cz.x);
+                p.x = cz.x + Math.cos(ang) * (cz.r - 10);
+                p.y = cz.y + Math.sin(ang) * (cz.r - 10);
+            }
+        }
         p.facingX = dx; p.facingY = dy;
         p.animTimer++; if (p.animTimer % 10 === 0) p.animFrame = 1 - p.animFrame;
         if (hasUpgrade('inferno') && state.frame % 4 === 0) {
@@ -319,6 +331,27 @@ function updatePlayer() {
                 showNotif('Combo lost!');
             }
         }
+        // Tick active timed cheat code
+        if (p.gamerActiveCode && p.gamerCodeTimer > 0) {
+            p.gamerCodeTimer--;
+            // GODMODE: keep invincible
+            if (p.gamerActiveCode === 'godmode') p.rabbitInvTimer = Math.max(p.rabbitInvTimer || 0, 2);
+            // SPEEDHACK: apply speed multiplier (reset each frame)
+            if (p.gamerActiveCode === 'speedhack') p._gamerSpeedBoost = true;
+            // BIGMODE: apply size + damage
+            if (p.gamerActiveCode === 'bigmode') { p._gamerBigMode = true; }
+            // AIMBOT: flag checked in combat.js
+            if (p.gamerCodeTimer <= 0) {
+                const ended = p.gamerActiveCode;
+                p.gamerActiveCode = null;
+                p._gamerSpeedBoost = false;
+                p._gamerBigMode = false;
+                showNotif(ended.toUpperCase() + ' ended.');
+            }
+        } else {
+            p._gamerSpeedBoost = false;
+            p._gamerBigMode = false;
+        }
     }
 
     // Fashion Model: beauty aura - periodically slows nearby enemies
@@ -418,6 +451,8 @@ function updatePlayer() {
             amt = Math.round(amt * (p.goldMult || 1));
             // Scrooge McDuck: double all gold
             if (p.pet === 'scroogeMcduck') amt *= 2;
+            // Daily challenge gold modifier
+            if (state._dailyGoldMult && state._dailyGoldMult !== 1) amt = Math.round(amt * state._dailyGoldMult);
             p.gold += amt;
             p.totalGoldEarned = (p.totalGoldEarned || 0) + amt;
             state.damageNumbers.push({ x: g.x, y: g.y - 8, value: amt, life: 45, vy: -0.9, crit: false, isGold: true });
@@ -433,6 +468,7 @@ function updatePlayer() {
         const h = state.heartPickups[i]; h.life--;
         const d = Math.hypot(h.x - p.x, h.y - p.y);
         if (d < 20) {
+            if (state._dailyNoHeal) { showNotif('No Healing! (daily modifier)'); state.heartPickups.splice(i, 1); continue; }
             p.hp = Math.min(p.maxHp, p.hp + 30); showNotif('Healed +30!');
             createExplosion(h.x, h.y, '#ff4444');
             // Janitor: also track heart pickups
@@ -444,6 +480,34 @@ function updatePlayer() {
             }
             state.heartPickups.splice(i, 1);
         } else if (h.life <= 0) state.heartPickups.splice(i, 1);
+    }
+
+    // Time tokens (Old Man character)
+    for (let i = state.timeTokenPickups.length - 1; i >= 0; i--) {
+        const tk = state.timeTokenPickups[i]; tk.life--;
+        if (Math.hypot(tk.x - p.x, tk.y - p.y) < 24) {
+            p.timeTokens = (p.timeTokens || 0) + 1;
+            createExplosion(tk.x, tk.y, '#a78bfa');
+            state.timeTokenPickups.splice(i, 1);
+            if (p.timeTokens >= 3) {
+                p.timeTokens = 0;
+                p.superOldMan = true;
+                p.superOldManTimer = 300;
+                p.hp = Math.min(p.maxHp, p.hp + 50);
+                showNotif('SUPER OLD MAN! 5 seconds of power!', true);
+                for (let k = 0; k < 10; k++) createExplosion(p.x + (Math.random()-0.5)*50, p.y + (Math.random()-0.5)*50, '#a78bfa');
+            } else {
+                showNotif('Time Token! (' + p.timeTokens + '/3)');
+            }
+        } else if (tk.life <= 0) state.timeTokenPickups.splice(i, 1);
+    }
+    // SUPER OLD MAN timer
+    if (p.superOldMan && p.charOldMan) {
+        p.superOldManTimer--;
+        if (p.superOldManTimer <= 0) {
+            p.superOldMan = false;
+            showNotif('SUPER OLD MAN faded...');
+        }
     }
 
     // Lava damage (demon and dragon are immune)
