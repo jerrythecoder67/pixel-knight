@@ -3,18 +3,20 @@
 // Layout (tile coords relative to DUNGEON_ORIGIN):
 //   Row1: [ENTRY 1,1,10,8] --H-corr-- [BATTLE1 13,1,11,8]
 //                                           |V-corr|
-//   Row2: [TREASURE 1,11,12,9] --H-corr-- [BATTLE2 15,11,11,9] --H-corr-- [BATTLE3 28,11,11,9]
+//   Row2: [TREASURE 1,11,12,9] --H-corr-- [PUZZLE 15,11,11,9] --H-corr-- [BATTLE2 28,11,11,9]
 //
 // Total area: 40w × 22h tiles = 1280×704px at world pos (3424, 2688)
+// Battle room indices: 0=Battle1, 1=Puzzle, 2=Battle2 (in roomsCleared array)
 
 const DUNGEON_ORIGIN = { tx: 107, ty: 84 };  // world tile origin of dungeon area
+const DUNGEON_PUZZLE_ROOM_IDX = 1; // which battle room slot is the puzzle room
 
 // Rooms: [relTX, relTY, widthTiles, heightTiles, type]
-//   type: 'entry'|'battle'|'treasure'
+//   type: 'entry'|'battle'|'puzzle'|'treasure'
 const DUNGEON_ROOMS = [
     { id: 0, rx: 1,  ry: 1,  rw: 10, rh: 8,  type: 'entry'    },
     { id: 1, rx: 13, ry: 1,  rw: 11, rh: 8,  type: 'battle'   },
-    { id: 2, rx: 15, ry: 11, rw: 11, rh: 9,  type: 'battle'   },
+    { id: 2, rx: 15, ry: 11, rw: 11, rh: 9,  type: 'puzzle'   },
     { id: 3, rx: 28, ry: 11, rw: 11, rh: 9,  type: 'battle'   },
     { id: 4, rx: 1,  ry: 11, rw: 12, rh: 9,  type: 'treasure' },
 ];
@@ -93,6 +95,9 @@ function generateDungeon() {
 
     const entryCenter = _roomWorldCenter(DUNGEON_ROOMS[0]);
 
+    // Puzzle room type: 50% pressure plates, 50% sequential switches
+    const puzzleType = Math.random() < 0.5 ? 'plates' : 'switches';
+
     state.dungeonPortal = { x: portalX, y: portalY, used: false };
     state.dungeon = {
         active: false,           // player is currently in dungeon
@@ -100,10 +105,18 @@ function generateDungeon() {
         entryY: entryCenter.y,
         returnX: portalX,        // where player returns when exiting
         returnY: portalY,
-        roomsCleared: [false, false, false], // battle rooms 1/2/3
+        roomsCleared: [false, false, false], // rooms 0=battle1, 1=puzzle, 2=battle2
         treasureOpened: false,
         cleared: false,
-        _spawned: [false, false, false],     // enemies spawned for each battle room
+        _spawned: [false, false, false],     // enemies/puzzle initiated for each room
+        puzzle: {
+            type: puzzleType,
+            solved: false,
+            holdTimer: 0,      // how long plates have been simultaneously active
+            plates: [],        // [{x, y, active}] — pressure plates
+            switches: [],      // [{x, y, order, activated}] — sequential switches
+            nextSwitch: 0,     // next switch index to activate
+        },
     };
 }
 
@@ -139,6 +152,103 @@ function _dungeonLivingEnemies(roomIndex) {
     return state.enemies.filter(e => e._dungeonRoom === roomIndex).length;
 }
 
+function _initPuzzleRoom() {
+    const dg = state.dungeon;
+    const pz = dg.puzzle;
+    const room = DUNGEON_ROOMS[2]; // puzzle room
+    const cx = (DUNGEON_ORIGIN.tx + room.rx + Math.floor(room.rw / 2)) * TILE;
+    const cy = (DUNGEON_ORIGIN.ty + room.ry + Math.floor(room.rh / 2)) * TILE;
+    const isCoOp = typeof MP !== 'undefined' && MP.active;
+
+    if (pz.type === 'plates') {
+        if (isCoOp) {
+            // Two plates — each player stands on one
+            pz.plates = [
+                { x: cx - 40, y: cy, active: false },
+                { x: cx + 40, y: cy, active: false },
+            ];
+        } else {
+            // Solo: one plate, hold 3 seconds
+            pz.plates = [{ x: cx, y: cy, active: false }];
+        }
+    } else {
+        // Sequential switches: numbered 1-3, activate in order
+        pz.switches = [
+            { x: cx - 60, y: cy - 30, order: 0, activated: false },
+            { x: cx + 60, y: cy - 30, order: 1, activated: false },
+            { x: cx,      y: cy + 40, order: 2, activated: false },
+        ];
+        pz.nextSwitch = 0;
+        // Spawn a few enemies that respawn until puzzle is solved (distraction)
+        for (let i = 0; i < 4; i++) {
+            const angle = (i / 4) * Math.PI * 2;
+            const base = ENEMY_TYPES.find(t => t.id === 'slime') || ENEMY_TYPES[0];
+            const hp = Math.round((base.hp || 40) * 1.5);
+            state.enemies.push({ ...base, x: cx + Math.cos(angle) * 80, y: cy + Math.sin(angle) * 80,
+                hp, maxHp: hp, _dungeonRoom: 1, _puzzleGuard: true });
+        }
+    }
+    showNotif(pz.type === 'plates'
+        ? (isCoOp ? 'PUZZLE: Both players stand on the plates!' : 'PUZZLE: Stand on the plate and hold!')
+        : 'PUZZLE: Activate the switches in order (1→2→3)!', true);
+}
+
+function _updatePuzzleRoom() {
+    const dg = state.dungeon;
+    const pz = dg.puzzle;
+    if (pz.solved) return;
+    const p = state.player;
+
+    if (pz.type === 'plates') {
+        // Determine which player stands on which plate
+        const players = [{ x: p.x, y: p.y }];
+        if (typeof MP !== 'undefined' && MP.active) {
+            // Add remote players
+            if (MP.isHost) {
+                MP.guestPlayers.forEach(g => { if (g.isAlive) players.push({ x: g.x, y: g.y }); });
+            } else if (MP._remoteHostPlayer) {
+                players.push({ x: MP._remoteHostPlayer.x, y: MP._remoteHostPlayer.y });
+            }
+        }
+
+        pz.plates.forEach(pl => {
+            pl.active = players.some(pp => Math.hypot(pp.x - pl.x, pp.y - pl.y) < 22);
+        });
+
+        const allActive = pz.plates.every(pl => pl.active);
+        if (allActive) {
+            pz.holdTimer++;
+            if (pz.holdTimer >= 180) { // 3 seconds
+                pz.solved = true;
+                dg.roomsCleared[DUNGEON_PUZZLE_ROOM_IDX] = true;
+                createExplosion(pz.plates[0].x, pz.plates[0].y, '#69f0ae');
+                if (pz.plates[1]) createExplosion(pz.plates[1].x, pz.plates[1].y, '#69f0ae');
+                showNotif('PUZZLE SOLVED! Path forward unlocked!', true);
+            }
+        } else {
+            pz.holdTimer = Math.max(0, pz.holdTimer - 2); // drain if not all active
+        }
+
+    } else {
+        // Sequential switches: player walks over them in order
+        const sw = pz.switches[pz.nextSwitch];
+        if (sw && !sw.activated && Math.hypot(p.x - sw.x, p.y - sw.y) < 20) {
+            sw.activated = true;
+            pz.nextSwitch++;
+            createExplosion(sw.x, sw.y, '#ffd700');
+            if (pz.nextSwitch < pz.switches.length) {
+                showNotif('Switch ' + pz.nextSwitch + '/' + pz.switches.length + ' — next!');
+            } else {
+                pz.solved = true;
+                dg.roomsCleared[DUNGEON_PUZZLE_ROOM_IDX] = true;
+                // Kill remaining puzzle guards
+                state.enemies = state.enemies.filter(e => !e._puzzleGuard);
+                showNotif('PUZZLE SOLVED! Path forward unlocked!', true);
+            }
+        }
+    }
+}
+
 function updateDungeon() {
     const p = state.player;
     const dg = state.dungeon;
@@ -166,23 +276,31 @@ function updateDungeon() {
 
     // ─── IN DUNGEON ───
 
-    // Check each battle room for entry (spawn enemies) and clearing
+    // Check each room for entry/clearing
     for (let ri = 0; ri < 3; ri++) {
         const room = DUNGEON_ROOMS[ri + 1]; // +1 for entry room offset
         if (dg.roomsCleared[ri]) continue;
 
         if (_playerInRoom(room)) {
-            if (!dg._spawned[ri]) {
-                dg._spawned[ri] = true;
-                _spawnDungeonEnemies(ri);
-                showNotif('Battle room ' + (ri + 1) + '/3! Clear all enemies!');
-            }
-            // Check cleared
-            if (dg._spawned[ri] && _dungeonLivingEnemies(ri) === 0) {
-                dg.roomsCleared[ri] = true;
-                if (ri < 2) {
+            if (ri === DUNGEON_PUZZLE_ROOM_IDX) {
+                // ─── PUZZLE ROOM ───
+                if (!dg._spawned[ri]) {
+                    dg._spawned[ri] = true;
+                    _initPuzzleRoom();
+                }
+                _updatePuzzleRoom();
+            } else {
+                // ─── BATTLE ROOM ───
+                if (!dg._spawned[ri]) {
+                    dg._spawned[ri] = true;
+                    _spawnDungeonEnemies(ri);
+                    showNotif('Battle room! Clear all enemies!');
+                }
+                // Check cleared
+                if (dg._spawned[ri] && _dungeonLivingEnemies(ri) === 0) {
+                    dg.roomsCleared[ri] = true;
                     createExplosion(_roomWorldCenter(room).x, _roomWorldCenter(room).y, '#69f0ae');
-                    showNotif('Room ' + (ri + 1) + ' cleared!');
+                    showNotif('Room cleared!');
                 }
             }
         }
@@ -270,6 +388,47 @@ function drawDungeon() {
         }
     }
 
+    // ── Puzzle room elements ──
+    if (dg.active && dg._spawned[DUNGEON_PUZZLE_ROOM_IDX] && !dg.puzzle.solved) {
+        const pz = dg.puzzle;
+        const t = state.frame * 0.08;
+        if (pz.type === 'plates') {
+            pz.plates.forEach((pl, i) => {
+                const px = pl.x - cx, py = pl.y - cy;
+                const glow = pl.active ? 1.0 : 0.4 + Math.sin(t + i) * 0.2;
+                ctx.save();
+                ctx.globalAlpha = glow;
+                ctx.fillStyle = pl.active ? '#69f0ae' : '#37474f';
+                ctx.fillRect(px - 14, py - 6, 28, 12);
+                ctx.strokeStyle = pl.active ? '#fff' : '#78909c';
+                ctx.lineWidth = 2; ctx.strokeRect(px - 14, py - 6, 28, 12);
+                // Hold timer bar
+                if (pl.active && pz.holdTimer > 0) {
+                    const prog = pz.holdTimer / 180;
+                    ctx.fillStyle = '#ffd700';
+                    ctx.fillRect(px - 14, py + 8, 28 * prog, 3);
+                }
+                ctx.globalAlpha = 0.9;
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 7px monospace'; ctx.textAlign = 'center';
+                ctx.fillText(i === 0 ? 'P1' : 'P2', px, py + 4);
+                ctx.restore();
+            });
+        } else {
+            pz.switches.forEach((sw, i) => {
+                const px = sw.x - cx, py = sw.y - cy;
+                ctx.save();
+                ctx.globalAlpha = sw.activated ? 0.35 : 0.9;
+                ctx.fillStyle = sw.activated ? '#455a64' : (i === pz.nextSwitch ? '#ffd700' : '#78909c');
+                ctx.beginPath(); ctx.arc(px, py, 12, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(px, py, 12, 0, Math.PI * 2); ctx.stroke();
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 9px monospace'; ctx.textAlign = 'center';
+                ctx.fillText(String(i + 1), px, py + 4);
+                ctx.restore();
+            });
+        }
+    }
+
     // Dungeon interior: exit portal in entry room
     if (dg.active) {
         drawDungeonPortal(dg.entryX, dg.entryY, dg.cleared ? 'EXIT ▶' : 'EXIT (clear all rooms)', cx, cy);
@@ -279,7 +438,11 @@ function drawDungeon() {
         ctx.fillStyle = 'rgba(0,0,0,0.65)'; ctx.fillRect(canvas.width / 2 - 90, 2, 180, 20);
         ctx.font = 'bold 7px monospace'; ctx.textAlign = 'center';
         ctx.fillStyle = '#b39ddb';
-        const roomStatus = dg.roomsCleared.map((c, i) => c ? '✓' : (dg._spawned[i] ? '⚔' : '○')).join('  ');
+        const roomStatus = dg.roomsCleared.map((c, i) => {
+            if (c) return '✓';
+            if (i === DUNGEON_PUZZLE_ROOM_IDX) return dg._spawned[i] ? '?' : '?';
+            return dg._spawned[i] ? '⚔' : '○';
+        }).join('  ');
         ctx.fillText('DUNGEON  ' + roomStatus + '  ' + (dg.cleared ? '✓CLEARED' : ''), canvas.width / 2, 15);
         ctx.restore();
 

@@ -225,14 +225,13 @@
 
 
             <!-- Daily Challenge Overlay -->
-            <div id="daily-overlay" class="hidden">
+            <div id="daily-overlay" class="hidden" style="max-width:300px;text-align:center">
                 <button class="overlay-close-x" onclick="document.getElementById('daily-overlay').classList.add('hidden')">&#x2715;</button>
-                <h2 style="color:#ffd700;font-family:var(--font-pixel);font-size:10px;letter-spacing:2px;">⚡ DAILY CHALLENGE</h2>
-                <p class="upgrade-subtitle">Same challenge for everyone today</p>
+                <h2 style="color:#ffd700;font-family:var(--font-pixel);font-size:10px;letter-spacing:2px;">DAILY CHALLENGE</h2>
                 <div id="daily-content"></div>
-                <div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
-                    <button id="daily-start-btn" style="color:#ffd700;border-color:#ffd700;">START DAILY CHALLENGE</button>
-                    <button id="daily-share-btn" onclick="shareDailyScore()" style="color:#aaa;border-color:#555;font-size:8px;">SHARE SCORE</button>
+                <div style="display:flex;gap:8px;justify-content:center;margin-top:14px">
+                    <button id="daily-start-btn" style="color:#ffd700;border-color:#ffd700;font-size:9px;">START</button>
+                    <button onclick="shareDailyScore()" style="color:#aaa;border-color:#555;font-size:8px;">SHARE SCORE</button>
                 </div>
             </div>
 

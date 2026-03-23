@@ -92,8 +92,7 @@ function endGame() {
     {
         const _dm = { easy: 0.9, normal: 1.0, hard: 1.1, extreme: 1.2 };
         const _dMult = _dm[state.difficulty] || 1.0;
-        const _dailyMult = (state.isDailyChallenge && state.dailyParams) ? state.dailyParams.scoreMult : 1;
-        const _score = Math.round(((p.wave || 1) * 1000 + (p.kills || 0) * 10 + (p.totalGoldEarned || 0) * 0.1) * _dMult * _dailyMult);
+        const _score = Math.round(((p.wave || 1) * 1000 + (p.kills || 0) * 10 + (p.totalGoldEarned || 0) * 0.1) * _dMult);
         if (state.isDailyChallenge) recordDailyScore(_score, p.wave || 1);
         if (!persist.leaderboard) persist.leaderboard = [];
         persist.leaderboard.push({

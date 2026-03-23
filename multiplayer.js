@@ -433,8 +433,15 @@ function mpUpdateGuestPlayers() {
 
         if (inp.attacking && gp.attackCooldown <= 0) {
             gp.attackCooldown = 20;
+            // Use sent attack direction for directional hitbox; fall back to movement facing
+            const afx = inp.atkFX || gp.facingX || 1, afy = inp.atkFY || gp.facingY || 0;
+            if (Math.abs(afx) > 0.1) { gp.facingX = afx; gp.facingY = afy; }
             state.enemies.forEach(e => {
-                if (Math.hypot(e.x - gp.x, e.y - gp.y) < 40) {
+                const ex = e.x - gp.x, ey = e.y - gp.y;
+                const dist = Math.hypot(ex, ey);
+                // Directional arc: enemy must be within 60° of attack direction
+                const dot = dist > 0 ? (ex * afx + ey * afy) / dist : 1;
+                if (dist < 40 && dot > 0.5) {
                     e.hp -= gp.damage; e.hurtTimer = 12; gp.kills++;
                     state.damageNumbers.push({ x: e.x, y: e.y - 10, value: Math.round(gp.damage), life: 50, vy: -1.5, crit: false });
                 }
@@ -484,7 +491,7 @@ function mpBroadcastState() {
     if (MP._tick % 2 === 0) {
         const lightSnap = {
             type: 'state',
-            hp: { x: p.x, y: p.y, hp: p.hp, maxHp: p.maxHp, gold: p.gold, fx: p.facingX, af: p.animFrame, d: p.dashing, ch: p.character, nm: MP.playerName, wp: p.weapon || 'sword' },
+            hp: { x: p.x, y: p.y, hp: p.hp, maxHp: p.maxHp, gold: p.gold, fx: p.facingX, af: p.animFrame, d: p.dashing, ch: p.character, nm: MP.playerName, wp: p.weapon || 'sword', ax: p.atkFX || p.facingX, ay: p.atkFY || p.facingY, atk: p.attacking },
             gp: MP.guestPlayers.map(g => ({ id: g._peerId, x: g.x, y: g.y, hp: g.hp, mhp: g.maxHp, fx: g.facingX, af: g.animFrame, d: g.dashing, a: g.isAlive, ch: g.character, sk: g.skin, sl: g.slot, nm: g.name, wp: g.weapon || 'sword', kl: g.kills })),
             gld: state.goldPickups.slice(0, 30).map(g => ({ x: g.x, y: g.y, a: g.amount })),
             wave: p.wave, kills: p.kills, boss: state.bossActive,
@@ -493,8 +500,8 @@ function mpBroadcastState() {
         for (const conn of MP.conns) { try { conn.send(lightSnap); } catch(e) {} }
     }
 
-    // Enemies + weather: every 6 frames (~10/sec) — heavier packet
-    if (MP._tick % 6 === 0) {
+    // Enemies + weather: every 3 frames (~20/sec) — improved from 10/sec for smoother guest view
+    if (MP._tick % 3 === 0) {
         const enemySnap = {
             type: 'enemies',
             en: state.enemies.map(e => ({ x: Math.round(e.x), y: Math.round(e.y), hp: Math.round(e.hp), mhp: Math.round(e.maxHp || e.hp), type: e.type, fx: e.facingX, boss: e.isBoss, ht: e.hurtTimer > 0, cl: e.color, sz: e.sizeScale || 1, el: !!e.elite })),
@@ -507,10 +514,11 @@ function mpBroadcastState() {
 function mpSendInputs() {
     if (!MP.active || MP.isHost || !MP.conns[0] || MP._spectating) return;
     try {
-        MP.conns[0].send({ type: 'input', frame: state.frame, keys: { ...state.keys }, joyDir: state.joyDir, attacking: state._mpAttacking || false, dashing: state._mpDashing || false, paused: !!state.paused, weapon: state.player.weapon || 'sword' });
+        MP.conns[0].send({ type: 'input', frame: state.frame, keys: { ...state.keys }, joyDir: state.joyDir, attacking: state._mpAttacking || false, dashing: state._mpDashing || false, paused: !!state.paused, weapon: state.player.weapon || 'sword', atkFX: state._mpAtkFX || state.player.facingX, atkFY: state._mpAtkFY || state.player.facingY });
     } catch(e) {}
     state._mpAttacking = false;
     state._mpDashing = false;
+    state._mpAtkFX = 0; state._mpAtkFY = 0;
 }
 
 // Cache enemy type lookup map (built once, O(1) per lookup)
@@ -590,7 +598,7 @@ function drawRemotePlayers() {
     } else {
         if (MP._remoteHostPlayer) {
             const h = MP._remoteHostPlayer;
-            remotes.push({ x: h.x, y: h.y, hp: h.hp, maxHp: h.maxHp, facingX: h.fx, facingY: 0, animFrame: h.af, dashing: h.d, character: h.ch, skin: 'default', weapon: h.wp || 'sword', label: h.nm || 'Host' });
+            remotes.push({ x: h.x, y: h.y, hp: h.hp, maxHp: h.maxHp, facingX: h.fx, facingY: 0, animFrame: h.af, dashing: h.d, character: h.ch, skin: 'default', weapon: h.wp || 'sword', label: h.nm || 'Host', atkFX: h.ax, atkFY: h.ay, attacking: h.atk });
         }
         for (const g of (MP._remoteOtherGuests || [])) {
             if (g.a) remotes.push({ x: g.x, y: g.y, hp: g.hp, maxHp: g.mhp, facingX: g.fx, facingY: 0, animFrame: g.af, dashing: g.d, character: g.ch, skin: g.sk || 'default', weapon: g.wp || 'sword', label: g.nm || ('P' + (g.sl + 1)) });
@@ -644,6 +652,40 @@ function drawRemotePlayers() {
         }
     }
     ctx.textAlign = 'left';
+
+    // ── Offscreen arrows pointing to other players ──
+    const W = canvas.width, H = canvas.height;
+    const PAD = 18; // distance from screen edge
+    for (const rp of remotes) {
+        const sx = rp.x - state.camera.x, sy = rp.y - state.camera.y;
+        if (sx >= 0 && sx <= W && sy >= 0 && sy <= H) continue; // on screen, skip
+        // Clamp to screen edge
+        const ang = Math.atan2(sy - H / 2, sx - W / 2);
+        const ex = W / 2 + Math.cos(ang) * (W / 2 - PAD);
+        const ey = H / 2 + Math.sin(ang) * (H / 2 - PAD);
+        // Draw small triangle arrow
+        ctx.save();
+        ctx.translate(ex, ey);
+        ctx.rotate(ang);
+        ctx.globalAlpha = 0.85;
+        ctx.fillStyle = '#ffd700';
+        ctx.beginPath();
+        ctx.moveTo(10, 0);
+        ctx.lineTo(-6, -6);
+        ctx.lineTo(-6, 6);
+        ctx.closePath();
+        ctx.fill();
+        // Label distance in tiles
+        const dist = Math.round(Math.hypot(rp.x - (state.player.x || 0), rp.y - (state.player.y || 0)) / 32);
+        ctx.rotate(-ang);
+        ctx.font = '6px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#fff';
+        ctx.fillText(rp.label, 0, -10);
+        ctx.fillText(dist + 't', 0, -2);
+        ctx.globalAlpha = 1;
+        ctx.restore();
+    }
 }
 
 // ── Death / Spectate (guest-side) ────────────────────────────────────────────

@@ -7,6 +7,20 @@ function playerAttack() {
         state.player.attacking = true;
         state.player.attackCooldown = Math.round(wpn.cooldown * (state.player.attackSpeedMult || 1));
         state._mpAttacking = true;
+        // Compute and store attack direction so guest sees correct visual + sends it to host
+        let gfx, gfy;
+        const _gjd = state.joyDir;
+        if (_gjd && (Math.abs(_gjd.x) > 0.1 || Math.abs(_gjd.y) > 0.1)) {
+            const _gl = Math.hypot(_gjd.x, _gjd.y) || 1;
+            gfx = _gjd.x / _gl; gfy = _gjd.y / _gl;
+        } else {
+            const _gmx = state.mouse.x + state.camera.x, _gmy = state.mouse.y + state.camera.y;
+            const _gmd = Math.hypot(_gmx - state.player.x, _gmy - state.player.y) || 1;
+            gfx = (_gmx - state.player.x) / _gmd; gfy = (_gmy - state.player.y) / _gmd;
+        }
+        if (Math.abs(gfx) > 0.1) state.player.facingX = gfx;
+        state.player.atkFX = gfx; state.player.atkFY = gfy;
+        state._mpAtkFX = gfx; state._mpAtkFY = gfy;
         return;
     }
     state.player.attacking = true; state.player.attackCooldown = Math.round(wpn.cooldown * (state.player.attackSpeedMult || 1)); state.player.attackCount++;

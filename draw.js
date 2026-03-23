@@ -2592,23 +2592,7 @@ function draw() {
         ctx.fillText('LV' + xp.xpLevel + '  ' + xp.xp + '/' + xp.xpToNext + ' XP' + spTxt, canvas.width / 2, bY - 3);
     }
     if (state.gameOver) { ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(0, 0, canvas.width, canvas.height); }
-    // Daily challenge banner
-    if (state.isDailyChallenge && !state.gameOver) {
-        const pulse = 0.75 + Math.sin(state.frame * 0.05) * 0.25;
-        ctx.save();
-        ctx.font = 'bold 7px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillStyle = `rgba(255,215,0,${pulse})`;
-        ctx.fillText('★ DAILY CHALLENGE ★', canvas.width / 2, 14);
-        if (state.dailyParams) {
-            const multStr = state.dailyParams.scoreMult.toFixed(1) + '× SCORE';
-            ctx.font = '6px monospace';
-            ctx.fillStyle = `rgba(105,240,174,${pulse})`;
-            ctx.fillText(multStr, canvas.width / 2, 23);
-        }
-        ctx.restore();
-    }
-    if (_swFR) CanvasRenderingContext2D.prototype.fillRect = _swFR; // restore after stickWorld frame
+if (_swFR) CanvasRenderingContext2D.prototype.fillRect = _swFR; // restore after stickWorld frame
 }
 
 function drawCharacterBodyNonKnight(p) {
