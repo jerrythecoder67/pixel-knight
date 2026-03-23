@@ -212,6 +212,7 @@ function spawnHordeEnemy() {
 
 function spawnShadowDemon() {
     if (state.shadowDemonActive || state.bossActive) return;
+    if (state.dungeon && state.dungeon.active) return; // no shadow demons inside dungeon
     state.shadowDemonActive = true;
     const ang = Math.random() * Math.PI * 2;
     const ws = 1 + state.player.wave * 0.1;

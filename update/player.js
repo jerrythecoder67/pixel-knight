@@ -50,8 +50,8 @@ function updatePlayer() {
         // Jellyfish sting slow
         if (p.jellyfishSlow > 0) { spd *= 0.45; p.jellyfishSlow--; }
         const _nx = p.x + dx * spd, _ny = p.y + dy * spd;
-        const _voidX = !p.dashing && getTerrainAt(_nx, p.y) === 'void';
-        const _voidY = !p.dashing && getTerrainAt(p.x, _ny) === 'void';
+        const _voidX = getTerrainAt(_nx, p.y) === 'void';
+        const _voidY = getTerrainAt(p.x, _ny) === 'void';
         if (!_voidX && !_voidY) { p.x = _nx; p.y = _ny; }
         else if (!_voidX) { p.x = _nx; }
         else if (!_voidY) { p.y = _ny; }

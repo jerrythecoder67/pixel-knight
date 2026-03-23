@@ -209,7 +209,7 @@
                 <div style="display:flex;flex-direction:column;gap:6px">
                     <button id="lore-btn">LORE</button>
                     <button id="lb-btn">LEADERBOARD</button>
-                    <button id="daily-btn" onclick="openDailyOverlay()" style="color:#ffd700;border-color:#ffd700;">⚡ DAILY</button>
+                    <button id="daily-btn" onclick="openDailyOverlay()">DAILY</button>
                     <button id="mp-open-btn" onclick="document.getElementById('difficulty-overlay').classList.add('hidden');document.getElementById('mp-confirm-overlay').classList.remove('hidden');">MULTIPLAYER</button>
                 </div>
 
@@ -227,12 +227,7 @@
             <!-- Daily Challenge Overlay -->
             <div id="daily-overlay" class="hidden" style="max-width:300px;text-align:center">
                 <button class="overlay-close-x" onclick="document.getElementById('daily-overlay').classList.add('hidden')">&#x2715;</button>
-                <h2 style="color:#ffd700;font-family:var(--font-pixel);font-size:10px;letter-spacing:2px;">DAILY CHALLENGE</h2>
-                <div id="daily-content"></div>
-                <div style="display:flex;gap:8px;justify-content:center;margin-top:14px">
-                    <button id="daily-start-btn" style="color:#ffd700;border-color:#ffd700;font-size:9px;">START</button>
-                    <button onclick="shareDailyScore()" style="color:#aaa;border-color:#555;font-size:8px;">SHARE SCORE</button>
-                </div>
+                <div id="daily-content" style="cursor:pointer"></div>
             </div>
 
             <!-- MP Step 1: Confirmation -->
@@ -453,7 +448,7 @@
                     <button id="reset-progress-btn" class="danger-btn">Reset Progress</button>
                     <button id="mp-respawn-btn" class="hidden diff-btn diff-normal" style="font-size:13px;padding:8px 18px">Respawn</button>
                     <button id="mp-spectate-btn" class="hidden diff-btn diff-easy" style="font-size:13px;padding:8px 18px">Spectate</button>
-                    <button id="mp-quit-btn" class="hidden"></button>
+                    <button id="mp-quit-btn" class="hidden diff-btn diff-extreme" style="font-size:13px;padding:8px 18px">Quit to Menu</button>
                 </div>
             </div>
 
