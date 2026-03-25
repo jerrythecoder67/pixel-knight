@@ -3,6 +3,8 @@ function updateWave() {
     // Pause all wave logic while inside the dungeon or tutorial
     if (state.dungeon && state.dungeon.active) return;
     if (state.tutorial && state.tutorial.active) return;
+    // Custom wave editor run: delegate entirely to editor logic
+    if (state.customWaves) { updateCustomWave(); return; }
     const p = state.player;
 
     // Drain wave spawn queue — stagger enemy arrivals until all are out

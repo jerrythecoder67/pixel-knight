@@ -861,6 +861,13 @@ button:active {
     transition: border-color 0.15s, color 0.15s;
 }
 #daily-btn:hover { border-color: #ffed2a; color: #ffef3a; }
+#we-open-btn {
+    font-family: var(--font-pixel); font-size: 8px; padding: 6px 14px;
+    background: transparent; border: 2px solid #1565c0;
+    color: #42a5f5; cursor: pointer; letter-spacing: 2px;
+    transition: border-color 0.15s, color 0.15s;
+}
+#we-open-btn:hover { border-color: #42a5f5; color: #90caf9; }
 
 /* MP overlays — match the difficulty/pet select panel style */
 #mp-confirm-overlay, #mp-choice-overlay, #mp-join-overlay, #mp-lobby-overlay, #mp-guest-overlay {

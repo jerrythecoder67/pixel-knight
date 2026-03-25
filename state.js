@@ -124,6 +124,12 @@ const state = {
     gamepadDir: null,    // { x, y } — right-stick aim direction
     gamepadActive: false,
     mpMode: false,       // true after user confirms multiplayer
+    // Custom wave editor
+    customWaves: null,      // scenario object when running editor waves
+    customWaveIndex: 0,
+    _cwSpawned: false,
+    _cwSurviveTimer: 0,
+    _cwComplete: false,
 };
 // Build pet overlay dynamically (will be called after DOM ready and after achievements grant pets)
 // Deferred until after function definitions below.
