@@ -13,7 +13,8 @@ const PERSIST_DEFAULT = {
     runHistory: [],
     seenEnemies: {},
     leaderboard: [], endlessLeaderboard: [], // endlessLeaderboard kept for backwards compat
-    dailyChallenge: null
+    dailyChallenge: null,
+    tutorialDone: false
 };
 function loadPersist() {
     try { return Object.assign({}, PERSIST_DEFAULT, JSON.parse(localStorage.getItem(PERSIST_KEY) || '{}')); }

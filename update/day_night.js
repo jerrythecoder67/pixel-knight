@@ -2,6 +2,8 @@
 function updateDayNight() {
     const p = state.player;
     const dn = state.dayNight;
+    // Freeze day/night during tutorial — night step sets it manually via _tEnterStep
+    if (state.tutorial && state.tutorial.active) return;
     if (state.mapVariant === 'cave') { dn.alpha = 0.45; } // cave: frozen dim
     else {
     const EVENING_FRAMES = 600;

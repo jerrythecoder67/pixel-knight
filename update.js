@@ -1,6 +1,9 @@
 // ─── UPDATE ───
 function update() {
     if (state.gameOver) return;
+    // Tutorial always processes first (handles key detection + step pausing)
+    if (state.tutorial && state.tutorial.active) updateTutorial();
+    if (state.tutorial && state.tutorial.active && state.tutorial.promptPhase) return;
     // MP host: keep simulation running while paused (shop/upgrade) so guests aren't frozen.
     // Only applies after the game has actually started (not during lobby).
     // Host player is shielded (immune to damage) while paused.

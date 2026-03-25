@@ -2335,7 +2335,7 @@ function draw() {
             if (isAlienNight) {
                 // Alien night: blinding white overlay, destination-out punches a transparent hole near player
                 nctx.globalCompositeOperation = 'destination-out';
-                const baseR = (p.torchTimer > 0 ? 180 + Math.min(60, p.torchTimer / 20) : 80) * nvMult;
+                const baseR = (p.torchTimer > 0 ? 180 + Math.min(60, p.torchTimer / 20) : 120) * nvMult;
                 const pg2 = nctx.createRadialGradient(plx, ply, 0, plx, ply, baseR);
                 pg2.addColorStop(0,    'rgba(0,0,0,1)');
                 pg2.addColorStop(0.3,  'rgba(0,0,0,0.95)');
@@ -2348,7 +2348,7 @@ function draw() {
             } else {
             // Punch light holes using destination-out on the offscreen canvas only
             nctx.globalCompositeOperation = 'destination-out';
-            const baseR = (p.torchTimer > 0 ? 180 + Math.min(60, p.torchTimer / 20) : 80) * nvMult;
+            const baseR = (p.torchTimer > 0 ? 180 + Math.min(60, p.torchTimer / 20) : 120) * nvMult;
             const pg = nctx.createRadialGradient(plx, ply, 0, plx, ply, baseR);
             pg.addColorStop(0,    'rgba(0,0,0,1)');
             pg.addColorStop(0.3,  'rgba(0,0,0,0.95)');
@@ -2592,6 +2592,7 @@ function draw() {
         ctx.fillText('LV' + xp.xpLevel + '  ' + xp.xp + '/' + xp.xpToNext + ' XP' + spTxt, canvas.width / 2, bY - 3);
     }
     if (state.gameOver) { ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(0, 0, canvas.width, canvas.height); }
+    drawTutorial();
 if (_swFR) CanvasRenderingContext2D.prototype.fillRect = _swFR; // restore after stickWorld frame
 }
 

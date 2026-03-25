@@ -57,10 +57,10 @@ function openDailyOverlay() {
         </div>`;
     }
 
-    const el = document.getElementById('daily-overlay');
-    document.getElementById('daily-content').innerHTML = `
+    const contentEl = document.getElementById('daily-content');
+    contentEl.innerHTML = `
         <div style="font-family:var(--font-pixel);font-size:7px;color:#aaa;margin-bottom:12px">${dateKey}</div>
-        <div style="display:flex;gap:24px;justify-content:center;align-items:center;margin-bottom:8px">
+        <div style="display:flex;gap:24px;justify-content:center;align-items:center;margin-bottom:12px">
             <div style="text-align:center">
                 <div style="font-family:var(--font-pixel);font-size:7px;color:#aaa;margin-bottom:4px">CHARACTER</div>
                 <div style="font-family:var(--font-pixel);font-size:18px">${charData.icon || '⚔'}</div>
@@ -74,13 +74,11 @@ function openDailyOverlay() {
             </div>
         </div>
         ${prevHtml}
+        <div style="font-family:var(--font-pixel);font-size:6px;color:#555;margin-top:8px">CLICK TO START</div>
     `;
+    contentEl.onclick = () => startDailyChallenge(params);
 
-    const startBtn = document.getElementById('daily-start-btn');
-    startBtn.textContent = alreadyDone ? 'PLAY AGAIN' : 'START';
-    startBtn.onclick = () => startDailyChallenge(params);
-
-    el.classList.remove('hidden');
+    document.getElementById('daily-overlay').classList.remove('hidden');
 }
 
 function startDailyChallenge(params) {

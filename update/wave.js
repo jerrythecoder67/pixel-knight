@@ -1,7 +1,8 @@
 // ─── WAVE ADVANCEMENT, BOSS SPAWNING, HORDE/ELITE WAVES ───
 function updateWave() {
-    // Pause all wave logic while inside the dungeon
+    // Pause all wave logic while inside the dungeon or tutorial
     if (state.dungeon && state.dungeon.active) return;
+    if (state.tutorial && state.tutorial.active) return;
     const p = state.player;
 
     // Drain wave spawn queue — stagger enemy arrivals until all are out

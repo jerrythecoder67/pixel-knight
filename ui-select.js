@@ -127,6 +127,8 @@ function selectPet(key) {
 }
 
 function selectDifficulty(key) {
+    // First-time players get the tutorial instead of jumping straight into a run
+    if (!persist.tutorialDone) { startTutorial(); return; }
     // Normal run clears any leftover daily challenge state
     state.isDailyChallenge = false;
     state.dailyParams = null;

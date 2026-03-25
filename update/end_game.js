@@ -1,6 +1,7 @@
 // ─── END GAME ───
 function endGame() {
     if (state.gameOver) return; // guard against double-call within same frame
+    if (state.tutorial && state.tutorial.active) { state.player.hp = state.player.maxHp; return; } // revive during tutorial
     // MP guest: enter spectate mode instead of full game over
     if (typeof MP !== 'undefined' && MP.active && !MP.isHost) {
         mpGuestEnterSpectate();

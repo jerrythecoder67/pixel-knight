@@ -1612,7 +1612,7 @@ const BESTIARY_INFO = {
     troll:       { name:'Troll',         world:'standard', color:'#a5d6a7', desc:'Large, angry, and surprisingly good at ground-pounding. Do not let it catch you.' },
     imp:         { name:'Imp',           world:'standard', color:'#ff8a65', desc:'Small and fast. Splits into two when low on health. Twice the annoyance.' },
     golem:       { name:'Golem',         world:'standard', color:'#90a4ae', desc:'Built of stone. Hardens under pressure. Charges at full speed when enraged.' },
-    vampire:     { name:'Vampire',       world:'standard', color:'#b71c1c', desc:'Drains your blood from a distance. Summons kin. Very dramatic about the whole thing.' },
+    vampire:     { name:'Vampire',       world:'standard', color:'#b71c1c', desc:'Drains your blood from a distance. Summons kin. Very dramatic about the whole thing. Also currently in a lawsuit fight with Vampire' },
     spider:      { name:'Spider',        world:'standard', color:'#6d4c41', desc:'Drops webs to slow you. Lays eggs that hatch into spiderlings. You\'re welcome.' },
     wizard:      { name:'Wizard',        world:'standard', color:'#7986cb', desc:'Fired magic bolts. Studied for 40 years to shoot purple orbs at a stranger.' },
     demon:       { name:'Demon',         world:'standard', color:'#c62828', desc:'Erupts in hellfire rings. Enjoys the suffering. Classic demon behavior.' },
@@ -1639,13 +1639,13 @@ const BESTIARY_INFO = {
     megalodon:   { name:'Megalodon',     world:'sailor',   color:'#546e7a', desc:'Ancient apex predator. Tail sweep, water rush, full enrage. Very not extinct.' },
     // Dino world
     raptor:      { name:'Raptor',        world:'dino',     color:'#8d6e63', desc:'Pack hunter. Boosts speed near allies. Clever girl.' },
-    compy:       { name:'Compsognathus', world:'dino',     color:'#a1887f', desc:'Tiny. Fast. Seems harmless. Is not harmless when there are thirty of them.' },
+    compy:       { name:'Compy',         world:'dino',     color:'#a1887f', desc:'Tiny. Fast. Seems harmless. Is not harmless when there are thirty of them.' },
     pterodactyl: { name:'Pterodactyl',   world:'dino',     color:'#78909c', desc:'Circles overhead then dive-bombs. Screams the entire time.' },
     stegosaurus: { name:'Stegosaurus',   world:'dino',     color:'#689f38', desc:'Plated back absorbs knockback. Swings its spiked tail like it owns the place.' },
     triceratops: { name:'Triceratops',   world:'dino',     color:'#5d4037', desc:'Charges in a straight line and will not stop. Three horns, zero brakes.' },
     ankylosaurus:{ name:'Ankylosaurus',  world:'dino',     color:'#4e342e', desc:'Armored tank. Tail swipe hits wide. Slow but impossibly hard to dent.' },
     spinosaurus: { name:'Spinosaurus',   world:'dino',     color:'#455a64', desc:'Massive sail-backed predator. Slower than its rage suggests. Very, very large.' },
-    trexBoss:    { name:'T-Rex King',    world:'dino',     color:'#e65100', desc:'King of the dinosaurs. Ground stomp, roar charge, enrages at 50%. Respect it.' },
+    trexBoss:    { name:'T-Rex King',    world:'dino',     color:'#e65100', desc:'King of the dinosaurs. Ground stomp, roar charge, enrages at 50%. Respect it or you\'re chow.' },
 };
 const BESTIARY_WORLDS = [
     { key:'standard', label:'Standard', color:'#aaa'    },
