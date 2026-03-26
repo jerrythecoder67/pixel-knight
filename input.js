@@ -371,7 +371,7 @@ function buildDynamicLore() {
 
 document.getElementById('lore-btn').addEventListener('click', () => {
     buildDynamicLore();
-    document.getElementById('difficulty-overlay').classList.add('hidden');
+    document.getElementById('title-overlay').classList.add('hidden');
     document.getElementById('lore-overlay').classList.remove('hidden');
     document.getElementById('lore-scroll').scrollTop = 0;
 });
@@ -379,7 +379,7 @@ document.getElementById('lore-close-btn').addEventListener('click', () => {
     const scroll = document.getElementById('lore-scroll');
     const didntRead = scroll.scrollTop === 0;
     document.getElementById('lore-overlay').classList.add('hidden');
-    document.getElementById('difficulty-overlay').classList.remove('hidden');
+    document.getElementById('title-overlay').classList.remove('hidden');
     if (didntRead && !persist.achievements.tooLongDidntRead) grantAchievement('tooLongDidntRead');
     _audio.startMusic();
 });
@@ -402,12 +402,12 @@ document.getElementById('lb-btn').addEventListener('click', () => {
                     '<td class="lb-time">'+(e.difficulty||'normal')+'</td><td class="lb-date">'+(e.date||'')+'</td></tr>';
             }).join('') + '</tbody></table>';
     }
-    document.getElementById('difficulty-overlay').classList.add('hidden');
+    document.getElementById('title-overlay').classList.add('hidden');
     document.getElementById('leaderboard-overlay').classList.remove('hidden');
 });
 document.getElementById('lb-close-btn').addEventListener('click', () => {
     document.getElementById('leaderboard-overlay').classList.add('hidden');
-    document.getElementById('difficulty-overlay').classList.remove('hidden');
+    document.getElementById('title-overlay').classList.remove('hidden');
 });
 document.getElementById('gamer-shop-skip-btn').addEventListener('click', () => skipGamerShop());
 document.getElementById('upgrade-close-btn').addEventListener('click', () => {

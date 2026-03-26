@@ -127,7 +127,7 @@ function mpConfirmYes() {
 function mpConfirmNo() {
     state.mpMode = false;
     _mpHide('mp-confirm-overlay');
-    _mpShow('difficulty-overlay');
+    _mpShow('title-overlay');
 }
 
 // ── Step 2: After pet select — show choice overlay ────────────────────────────
@@ -800,7 +800,7 @@ function mpDisconnect() {
     state.paused = false;
     const mpBtn = document.getElementById('mp-open-btn');
     if (mpBtn) mpBtn.style.display = '';
-    _mpShow('difficulty-overlay');
+    _mpShow('title-overlay');
 }
 
 function mpCleanup() {

@@ -168,7 +168,7 @@ function _tFinish() {
     state.difficulty = null; // triggers animated menu background in draw()
     state.paused = true;     // stop game logic without triggering game-over overlay
     document.getElementById('right-panel').classList.add('hidden');
-    document.getElementById('difficulty-overlay').classList.remove('hidden');
+    document.getElementById('title-overlay').classList.remove('hidden');
     _audio.startMusic();
 }
 
@@ -343,7 +343,7 @@ function startTutorial() {
     spawnTrees();
 
     // Hide all select overlays, show game panel
-    ['difficulty-overlay','character-overlay','skin-overlay','pet-overlay',
+    ['title-overlay','difficulty-overlay','character-overlay','skin-overlay','pet-overlay',
      'lore-overlay','leaderboard-overlay'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.add('hidden');

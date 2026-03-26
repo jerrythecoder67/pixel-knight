@@ -196,24 +196,30 @@
                 <div id="skin-choices"></div>
             </div>
 
+            <!-- Title Screen -->
+            <div id="title-overlay">
+                <h1 id="title-main">PIXEL KNIGHT</h1>
+                <p class="upgrade-subtitle">Survival Action</p>
+                <button id="play-btn" onclick="document.getElementById('title-overlay').classList.add('hidden');document.getElementById('difficulty-overlay').classList.remove('hidden');">PLAY</button>
+                <div id="title-nav-btns">
+                    <button id="lore-btn">LORE</button>
+                    <button id="lb-btn">LEADERBOARD</button>
+                    <button id="daily-btn" onclick="openDailyOverlay()">DAILY</button>
+                    <button id="mp-open-btn" onclick="document.getElementById('title-overlay').classList.add('hidden');document.getElementById('mp-confirm-overlay').classList.remove('hidden');">MULTIPLAYER</button>
+                    <button id="we-open-btn" onclick="weOpenEditor()">WAVE EDITOR</button>
+                </div>
+            </div>
+
             <!-- Difficulty Select -->
-            <div id="difficulty-overlay">
-                <h2>PIXEL KNIGHT</h2>
-                <p class="upgrade-subtitle">Select Difficulty:</p>
+            <div id="difficulty-overlay" class="hidden">
+                <h2>SELECT DIFFICULTY</h2>
+                <p class="upgrade-subtitle">Choose your challenge:</p>
                 <div id="difficulty-choices">
                     <button class="diff-btn diff-easy" id="diff-easy">EASY<br><span>Standard foes, slight HP bonus</span></button>
                     <button class="diff-btn diff-normal" id="diff-normal">NORMAL<br><span>Tougher foes, reduced HP &amp; Gold</span></button>
                     <button class="diff-btn diff-hard" id="diff-hard">HARD<br><span>Brutal enemies, low HP &amp; Gold</span></button>
                     <button class="diff-btn diff-hard" id="diff-extreme" style="display:none;border-color:#ff1744;color:#ff1744;">☠ EXTREME<br><span>Beat Hard &lt;30min twice to unlock</span></button>
                 </div>
-                <div style="display:flex;flex-direction:column;gap:6px">
-                    <button id="lore-btn">LORE</button>
-                    <button id="lb-btn">LEADERBOARD</button>
-                    <button id="daily-btn" onclick="openDailyOverlay()">DAILY</button>
-                    <button id="mp-open-btn" onclick="document.getElementById('difficulty-overlay').classList.add('hidden');document.getElementById('mp-confirm-overlay').classList.remove('hidden');">MULTIPLAYER</button>
-                    <button id="we-open-btn" onclick="weOpenEditor()">WAVE EDITOR</button>
-                </div>
-
             </div>
 
             <!-- Endless Leaderboard Overlay -->

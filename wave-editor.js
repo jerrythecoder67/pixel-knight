@@ -108,7 +108,7 @@ function weOpenEditor() {
     weState.currentWave = 0;
     const overlay = document.getElementById('wave-editor-overlay');
     overlay.classList.remove('hidden');
-    document.getElementById('difficulty-overlay').classList.add('hidden');
+    document.getElementById('title-overlay').classList.add('hidden');
     document.getElementById('we-diff-select').value = weState.scenario.difficulty || 'normal';
     _weRefreshWaveTabs();
     weSelectTab('enemies');
@@ -127,7 +127,7 @@ function weOpenEditor() {
 function weCloseEditor() {
     weState.open = false;
     document.getElementById('wave-editor-overlay').classList.add('hidden');
-    document.getElementById('difficulty-overlay').classList.remove('hidden');
+    document.getElementById('title-overlay').classList.remove('hidden');
 }
 
 // ── Render ────────────────────────────────────────────────────────────────────
@@ -689,7 +689,7 @@ function weStartGame() {
     document.getElementById('wave-editor-overlay').classList.add('hidden');
     document.getElementById('right-panel').classList.remove('hidden');
     document.getElementById('overlay').classList.add('hidden');
-    document.getElementById('difficulty-overlay').classList.add('hidden');
+    document.getElementById('title-overlay').classList.add('hidden');
     updateWeaponHUD();
     _audio.startMusic();
     persist.hasPlayed = true; savePersist(persist);

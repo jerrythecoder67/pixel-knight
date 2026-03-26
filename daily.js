@@ -83,7 +83,7 @@ function openDailyOverlay() {
 
 function startDailyChallenge(params) {
     document.getElementById('daily-overlay').classList.add('hidden');
-    document.getElementById('difficulty-overlay').classList.add('hidden');
+    document.getElementById('title-overlay').classList.add('hidden');
 
     // Set daily flags
     state.isDailyChallenge = true;
