@@ -811,6 +811,7 @@ button:active {
     padding: 28px 36px;
     text-align: center;
     z-index: 100;
+    pointer-events: auto;
     display: flex;
     flex-direction: column;
     align-items: center;
