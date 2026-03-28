@@ -101,7 +101,7 @@ function spawnWaveEnemy(typeEntry) {
         e.mpTargetIdx = MP._spawnIdx % (1 + MP.guestPlayers.length); // 0=host, 1..n=guests
     }
     state.enemies.push(e);
-    if (isElite && Math.random() < 0.10) {
+    if (isElite && Math.random() < 0.28) {
         e.mod = ['shielded','enraged','splitting','vampiric'][Math.floor(Math.random() * 4)];
         if (e.mod === 'shielded') { e.shield = Math.floor(e.hp * 0.4); e.maxShield = e.shield; }
         e._hpLastFrame = e.hp;
@@ -181,7 +181,7 @@ function spawnEnemy() {
     });
     if (isRedWizard) showNotif('⚠ A Red Wizard appears!');
     // Elite mod: 10% chance for a special modifier
-    if (isElite && Math.random() < 0.10) {
+    if (isElite && Math.random() < 0.28) {
         const e = state.enemies[state.enemies.length - 1];
         e.mod = ['shielded','enraged','splitting','vampiric'][Math.floor(Math.random() * 4)];
         if (e.mod === 'shielded') { e.shield = Math.floor(e.hp * 0.4); e.maxShield = e.shield; }
